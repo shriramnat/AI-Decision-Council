@@ -1,0 +1,725 @@
+@page
+@model SettingsModel
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<div class="settings-container">
+    <div class="settings-card">
+        <div class="card-header">
+            <h2>⚙️ Settings</h2>
+        </div>
+        
+        <div class="card-body">
+            <!-- Model Management Section -->
+            <div class="settings-section">
+                <div class="section-header">
+                    <h3>🤖 Configured Models</h3>
+                    <div class="section-header-actions">
+                        <button type="button" class="btn btn-secondary" onclick="exportModels()" title="Export all model configurations">
+                            📤 Export Config
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="importModels()" title="Import model configurations">
+                            📥 Import Config
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="openModelFlyout()">
+                            ➕ Add Model
+                        </button>
+                    </div>
+                </div>
+                <input type="file" id="importFileInput" accept=".modelconfig" style="display: none;" onchange="handleImportFile(event)" />
+                
+                @if (Model.ConfiguredModels.Any())
+                {
+                    <div class="models-table-container">
+                        <table class="models-table">
+                            <thead>
+                                <tr>
+                                    <th>Model Name</th>
+                                    <th>Endpoint</th>
+                                    <th>API Key</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var mdl in Model.ConfiguredModels)
+                                {
+                                    <tr data-model-id="@mdl.Id" data-original-name="@mdl.ModelName" data-original-endpoint="@mdl.Endpoint">
+                                        <td class="model-name">
+                                            <input type="text" 
+                                                   class="editable-input name-input" 
+                                                   value="@mdl.ModelName"
+                                                   data-field="name"
+                                                   onchange="markRowChanged(this)" />
+                                        </td>
+                                        <td class="model-endpoint">
+                                            <input type="text" 
+                                                   class="editable-input endpoint-input" 
+                                                   value="@mdl.Endpoint"
+                                                   data-field="endpoint"
+                                                   onchange="markRowChanged(this)" />
+                                        </td>
+                                        <td class="model-apikey">
+                                            <input type="password" 
+                                                   class="editable-input apikey-input" 
+                                                   data-model-name="@mdl.ModelName"
+                                                   value="@(Model.GetMaskedApiKey(mdl.ModelName))"
+                                                   data-field="apikey"
+                                                   placeholder="Enter API key..."
+                                                   onchange="markRowChanged(this)" />
+                                            <button type="button" class="btn-icon" onclick="toggleApiKeyVisibility(this)">👁</button>
+                                        </td>
+                                        <td class="model-type" data-provider="@mdl.Provider.ToDisplayString()">
+                                            <span class="badge badge-@mdl.Provider.ToDisplayString().ToLower()">
+                                                @mdl.Provider.ToDisplayString()
+                                            </span>
+                                        </td>
+                                        <td class="model-actions">
+                                            <button type="button" class="btn-icon btn-save" onclick="saveRow(this)" disabled title="Save changes">
+                                                💾
+                                            </button>
+                                            <button type="button" class="btn-icon btn-delete" onclick="deleteModel(@mdl.Id, '@mdl.ModelName')" title="Delete model">
+                                                🗑️
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <p>No models configured. Click "Add Model" to get started.</p>
+                    </div>
+                }
+            </div>
+            
+            @if (!string.IsNullOrEmpty(Model.StatusMessage))
+            {
+                <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-error")">
+                    @Model.StatusMessage
+                </div>
+            }
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">⬅️ Back to Home</button>
+            </div>
+        </div>
+    </div>
+    
+    @* <div class="info-card">
+        <h3>ℹ️ About Model Configuration</h3>
+        <ul>
+            <li>Configure multiple AI models with their endpoints and API keys.</li>
+            <li>API keys are stored <strong>in memory only</strong> during runtime for security.</li>
+            <li>OpenAI models use the standard OpenAI API format.</li>
+            <li>Azure models use Azure OpenAI or Azure AI Foundry endpoints.</li>
+            <li>Models configured here will appear in the model dropdown on the main page.</li>
+        </ul>
+    </div> *@
+</div>
+
+<!-- Model Configuration Flyout -->
+<div id="modelFlyout" class="flyout">
+    <div class="flyout-content">
+        <div class="flyout-header">
+            <h3 id="flyoutTitle">Add Model</h3>
+            <button type="button" class="flyout-close" onclick="closeModelFlyout()">&times;</button>
+        </div>
+        <div class="flyout-body">
+            <input type="hidden" id="editModelId" />
+            
+            <div class="form-group">
+                <label for="modelName">Model Name *</label>
+                <input type="text" 
+                       id="modelName" 
+                       class="form-control" 
+                       placeholder="e.g., gpt-4, DeepSeek-V3"
+                       maxlength="100" />
+                <small class="form-text">Unique identifier for this model</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="modelEndpoint">Endpoint URL *</label>
+                <input type="text" 
+                       id="modelEndpoint" 
+                       class="form-control" 
+                       placeholder="e.g., https://api.openai.com/v1/"
+                       maxlength="500" />
+                <small class="form-text">The API endpoint for this model</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="modelApiKey">API Key</label>
+                <div class="api-key-input-group">
+                    <input type="password" 
+                           id="modelApiKey" 
+                           class="form-control" 
+                           placeholder="Enter API key (optional)" />
+                    <button type="button" class="btn btn-secondary btn-toggle-visibility" onclick="toggleVisibility('modelApiKey')">
+                        👁
+                    </button>
+                </div>
+                <small class="form-text">API key can be set now or later</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="modelProvider">Provider *</label>
+                <select id="modelProvider" class="form-control">
+                    <option value="OpenAI">OpenAI</option>
+                    <option value="Azure">Azure</option>
+                    <option value="Google" disabled>Google (Coming Soon)</option>
+                    <option value="xAI" disabled>xAI (Coming Soon)</option>
+                    <option value="Anthropic" disabled>Anthropic (Coming Soon)</option>
+                </select>
+                <small class="form-text">Select the AI provider for this model</small>
+            </div>
+            
+            <div id="flyoutError" class="alert alert-error" style="display: none;"></div>
+        </div>
+        <div class="flyout-footer">
+            <button type="button" class="btn btn-primary" onclick="saveModel()">Save</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+            } else {
+                input.type = 'password';
+            }
+        }
+
+        function toggleApiKeyVisibility(btn) {
+            const input = btn.previousElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+            } else {
+                input.type = 'password';
+            }
+        }
+
+        function markRowChanged(input) {
+            const row = input.closest('tr');
+            const saveBtn = row.querySelector('.btn-save');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.style.opacity = '1';
+            }
+            
+            // Mark API key input as changed if it's the API key field
+            if (input.classList.contains('apikey-input')) {
+                input.dataset.changed = 'true';
+            }
+        }
+
+        async function saveRow(btn) {
+            const row = btn.closest('tr');
+            const id = row.dataset.modelId;
+            const nameInput = row.querySelector('.name-input');
+            const endpointInput = row.querySelector('.endpoint-input');
+            const apikeyInput = row.querySelector('.apikey-input');
+            
+            const modelName = nameInput.value.trim();
+            const endpoint = endpointInput.value.trim();
+            const apiKey = apikeyInput.value.trim();
+            
+            if (!modelName || !endpoint) {
+                alert('Model name and endpoint are required.');
+                return;
+            }
+
+            // Only send API key if it was actually changed by the user
+            const apiKeyChanged = apikeyInput.dataset.changed === 'true';
+            const isMasked = apiKey.includes('...') || apiKey.includes('••');
+            
+            // Determine what to send:
+            // - If user changed the API key AND it's not masked, send the new key
+            // - If user didn't change it (still masked), don't send anything (undefined)
+            // - If user cleared it, send null
+            let apiKeyToSend;
+            if (apiKeyChanged) {
+                if (isMasked) {
+                    // This shouldn't happen, but just in case
+                    apiKeyToSend = undefined;
+                } else if (apiKey === '') {
+                    apiKeyToSend = null;  // User cleared the field
+                } else {
+                    apiKeyToSend = apiKey;  // User entered a new key
+                }
+            } else {
+                // Not changed, don't include in request
+                apiKeyToSend = undefined;
+            }
+            
+            // Get provider from the row's data attribute
+            const providerCell = row.querySelector('.model-type');
+            const provider = providerCell ? providerCell.dataset.provider : 'OpenAI';
+            
+            const requestBody = {
+                modelName: modelName,
+                endpoint: endpoint,
+                provider: provider
+            };
+            
+            // Only include apiKey if it's defined
+            if (apiKeyToSend !== undefined) {
+                requestBody.apiKey = apiKeyToSend;
+            }
+            
+            console.log('Saving row with data:', requestBody);
+            
+            try {
+                const response = await fetch(`/api/models/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (response.ok) {
+                    // Update original values
+                    row.dataset.originalName = modelName;
+                    row.dataset.originalEndpoint = endpoint;
+                    apikeyInput.dataset.modelName = modelName;
+                    apikeyInput.dataset.changed = 'false';  // Reset the changed flag
+                    
+                    // Disable save button
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    
+                    // Show success feedback
+                    btn.textContent = '✓';
+                    setTimeout(() => {
+                        btn.textContent = '💾';
+                    }, 1000);
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to save changes.');
+                }
+            } catch (error) {
+                alert('An error occurred: ' + error.message);
+            }
+        }
+
+        function openModelFlyout() {
+            document.getElementById('flyoutTitle').textContent = 'Add Model';
+            document.getElementById('editModelId').value = '';
+            document.getElementById('modelName').value = '';
+            document.getElementById('modelEndpoint').value = '';
+            document.getElementById('modelApiKey').value = '';
+            document.getElementById('modelProvider').value = 'OpenAI';
+            document.getElementById('flyoutError').style.display = 'none';
+            document.getElementById('modelFlyout').classList.add('active');
+        }
+
+        function closeModelFlyout() {
+            document.getElementById('modelFlyout').classList.remove('active');
+        }
+
+        async function saveModel() {
+            const id = document.getElementById('editModelId').value;
+            const modelName = document.getElementById('modelName').value.trim();
+            const endpoint = document.getElementById('modelEndpoint').value.trim();
+            const apiKey = document.getElementById('modelApiKey').value.trim();
+            const provider = document.getElementById('modelProvider').value;
+            const errorDiv = document.getElementById('flyoutError');
+
+            if (!modelName || !endpoint) {
+                errorDiv.textContent = 'Model name and endpoint are required.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const url = id ? `/api/models/${id}` : '/api/models';
+                const method = id ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        modelName: modelName,
+                        endpoint: endpoint,
+                        apiKey: apiKey || null,
+                        provider: provider
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    errorDiv.textContent = error.error || 'Failed to save model.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'An error occurred: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function deleteModel(id, modelName) {
+            if (!confirm(`Are you sure you want to delete the model "${modelName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/models/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete model.');
+                }
+            } catch (error) {
+                alert('An error occurred: ' + error.message);
+            }
+        }
+
+        // Export model configurations
+        async function exportModels() {
+            try {
+                window.location.href = '/Settings?handler=Export';
+            } catch (error) {
+                alert('Export failed: ' + error.message);
+            }
+        }
+
+        // Trigger file input for import
+        function importModels() {
+            document.getElementById('importFileInput').click();
+        }
+
+        // Handle the imported file
+        async function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            // Verify file extension
+            if (!file.name.endsWith('.modelconfig')) {
+                alert('Invalid file type. Please select a .modelconfig file.');
+                event.target.value = ''; // Reset input
+                return;
+            }
+
+            if (!confirm(`Import models from "${file.name}"?\n\nThis will:\n- Update existing models with matching names\n- Add new models from the file\n- Delete models not in the file\n\nContinue?`)) {
+                event.target.value = ''; // Reset input
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Get antiforgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (token) {
+                    formData.append('__RequestVerificationToken', token);
+                }
+
+                const response = await fetch('/Settings?handler=Import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message || 'Import successful!');
+                    window.location.reload();
+                } else {
+                    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    alert('Import failed: ' + (error.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Import failed: ' + error.message);
+            } finally {
+                event.target.value = ''; // Reset input
+            }
+        }
+
+        // Close flyout on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModelFlyout();
+            }
+        });
+
+        // Close flyout on background click
+        document.getElementById('modelFlyout').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModelFlyout();
+            }
+        });
+    </script>
+}
+
+<style>
+    .settings-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h3 {
+        margin: 0;
+        color: var(--text-primary, #fff);
+        font-size: 1.1rem;
+    }
+
+    .section-header-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .models-table-container {
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+
+    .models-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--bg-secondary, #1a1a1a);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .models-table th,
+    .models-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color, #333);
+    }
+
+    .models-table th {
+        background: var(--bg-tertiary, #252525);
+        font-weight: 600;
+        color: var(--text-primary, #fff);
+    }
+
+    .models-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .models-table tr:hover {
+        background: var(--bg-tertiary, #252525);
+    }
+
+    .model-endpoint {
+        max-width: 300px;
+    }
+
+    .endpoint-text {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .model-apikey {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .editable-input {
+        width: 100%;
+        padding: 0.4rem 0.6rem;
+        background: var(--bg-primary, #0d0d0d);
+        border: 1px solid var(--border-color, #333);
+        border-radius: 4px;
+        color: var(--text-primary, #fff);
+        font-size: 0.9rem;
+        transition: border-color 0.2s;
+    }
+
+    .editable-input:focus {
+        outline: none;
+        border-color: var(--accent-color, #007bff);
+    }
+
+    .name-input {
+        min-width: 150px;
+    }
+
+    .endpoint-input {
+        min-width: 250px;
+        font-family: monospace;
+        font-size: 0.85rem;
+    }
+
+    .apikey-input {
+        flex: 1;
+        min-width: 150px;
+        font-family: monospace;
+        font-size: 0.85rem;
+    }
+
+    .btn-icon {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0.2rem 0.4rem;
+        opacity: 0.7;
+        transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn-icon:hover:not(:disabled) {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .btn-icon:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-save {
+        color: #28a745;
+    }
+
+    .btn-delete {
+        color: #dc3545;
+    }
+
+    .badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-openai {
+        background: #10a37f;
+        color: white;
+    }
+
+    .badge-azure {
+        background: #0078d4;
+        color: white;
+    }
+
+    .badge-google {
+        background: #4285f4;
+        color: white;
+    }
+
+    .badge-xai {
+        background: #8b5cf6;
+        color: white;
+    }
+
+    .badge-anthropic {
+        background: #d97706;
+        color: white;
+    }
+
+    .model-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .empty-state {
+        padding: 2rem;
+        text-align: center;
+        color: var(--text-secondary, #999);
+    }
+
+    /* Flyout Styles */
+    .flyout {
+        position: fixed;
+        top: 0;
+        right: -500px;
+        width: 500px;
+        height: 100vh;
+        background: #1a1a1a;
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+        transition: right 0.3s ease;
+        z-index: 1000;
+    }
+
+    .flyout.active {
+        right: 0;
+    }
+
+    .flyout-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .flyout-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color, #333);
+    }
+
+    .flyout-header h3 {
+        margin: 0;
+        color: var(--text-primary, #fff);
+    }
+
+    .flyout-close {
+        background: transparent;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        color: var(--text-secondary, #999);
+        line-height: 1;
+        padding: 0;
+    }
+
+    .flyout-close:hover {
+        color: var(--text-primary, #fff);
+    }
+
+    .flyout-body {
+        flex: 1;
+        padding: 1.5rem;
+        overflow-y: auto;
+    }
+
+    .flyout-footer {
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color, #333);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-start;
+    }
+
+    @@media (max-width: 768px) {
+        .flyout {
+            width: 100%;
+            right: -100%;
+        }
+
+        .models-table {
+            font-size: 0.85rem;
+        }
+
+        .model-actions {
+            flex-direction: column;
+        }
+    }
+</style>

@@ -1,0 +1,80 @@
+[
+  {
+    "ModelName": "gpt-3.5-turbo",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-4",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-4-turbo",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-4.1",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-4.1-mini",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-4.1-nano",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-4o",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-4o-mini",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "gpt-5.2",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "o1",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "o1-mini",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "o1-pro",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  },
+  {
+    "ModelName": "o3-mini",
+    "Endpoint": "https://api.openai.com/v1/",
+    "ApiKey": "",
+    "Provider": "OpenAI"
+  }
+]

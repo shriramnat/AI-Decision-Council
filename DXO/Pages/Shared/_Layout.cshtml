@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AI Decision Council</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo-link">
+                <h1 class="logo">🤔</h1>
+            </a>
+            <span class="tagline">AI Decision Council</span>
+            <nav class="header-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/Settings" class="nav-link">Configure Models</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <span>© 2025 AI Decision Council. All rights reserved. | Empowering collaborative AI decision-making.</span>
+            <span> | <a href="https://github.com/shriramnat/AI-Decision-Council" target="_blank" rel="noopener noreferrer">View on GitHub</a></span>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Floating scroll buttons (global) -->
+    <div id="scrollFabContainer" class="scroll-fab" aria-hidden="false">
+        <button id="scrollTopBtn" class="scroll-fab-btn" title="Scroll to Top" aria-label="Scroll to Top">↑</button>
+        <button id="scrollBottomBtn" class="scroll-fab-btn" title="Scroll to Bottom" aria-label="Scroll to Bottom">↓</button>
+    </div>
+
+    <script>
+        // Scroll button functionality
+        document.getElementById('scrollTopBtn').addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        document.getElementById('scrollBottomBtn').addEventListener('click', function() {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>
