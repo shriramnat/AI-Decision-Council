@@ -1032,18 +1032,27 @@ Authoring rules:
             }
             
             const config = await response.json();
-            const reviewerTemplates = config.agents?.reviewers || [];
+            let reviewerTemplates = config.agents?.reviewers || [];
             
             if (reviewerTemplates.length === 0) {
                 grid.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No reviewer templates found.</p>';
                 return;
             }
             
+            // Sort templates alphabetically by role
+            reviewerTemplates = reviewerTemplates.sort((a, b) => {
+                return a.role.localeCompare(b.role);
+            });
+            
+            // Get currently added reviewer roles to determine which templates are already used
+            const addedRoles = this.reviewers.map(r => r.name);
+            
             // Clear grid and populate with template cards
             grid.innerHTML = '';
             
             reviewerTemplates.forEach(template => {
-                const card = this.createTemplateCard(template);
+                const isAdded = addedRoles.includes(template.role);
+                const card = this.createTemplateCard(template, isAdded);
                 grid.appendChild(card);
             });
             
@@ -1055,9 +1064,15 @@ Authoring rules:
     }
 
     // Create a template card element
-    createTemplateCard(template) {
+    createTemplateCard(template, isAdded = false) {
         const card = document.createElement('div');
         card.className = 'reviewer-template-card';
+        card.dataset.templateRole = template.role;
+        
+        // Add disabled class if already added
+        if (isAdded) {
+            card.classList.add('disabled');
+        }
         
         // Get category badge class
         const categoryClass = template.category.toLowerCase().replace('-', '-');
@@ -1071,13 +1086,15 @@ Authoring rules:
                 <h4 class="template-card-title">${template.role}</h4>
                 <span class="template-category-badge ${categoryClass}">${template.category}</span>
             </div>
-            <p class="template-card-description">${description}</p>
+            <p class="template-card-description">${isAdded ? 'Already added' : description}</p>
         `;
         
-        // Add click handler
-        card.addEventListener('click', () => {
-            this.selectReviewerTemplate(template);
-        });
+        // Add click handler only if not already added
+        if (!isAdded) {
+            card.addEventListener('click', () => {
+                this.selectReviewerTemplate(template);
+            });
+        }
         
         return card;
     }

@@ -388,6 +388,24 @@ a:active {
     transform: translateY(0);
 }
 
+.reviewer-template-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.reviewer-template-card.disabled:hover {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: var(--glass-border);
+    transform: none;
+    box-shadow: none;
+}
+
+.reviewer-template-card.disabled .template-card-description {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
 .template-card-header {
     display: flex;
     justify-content: space-between;
