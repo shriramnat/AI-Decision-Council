@@ -8,15 +8,10 @@ This readme covers a high-level overview and the minimal steps required to run t
 
 ## Core Concepts
 
-- **Models**  
-  External LLM endpoints (Azure, OpenAI, xAI) configured with credentials and model types.
-- **Creator**  
-  A primary agent responsible for generating and iterating on the draft based on reviewer feedback.
-- **Reviewers**  
-  Logical roles backed by models. Each agent uses a seed prompt to define its “personality” and evaluation lens.
-
-- **Council**  
-  A collection of reviewer agents that critique and validate a central draft.
+- **Models** - External LLM endpoints (Azure, OpenAI, xAI) configured with credentials and model types.
+- **Creator** - A primary agent responsible for generating and iterating on the draft based on reviewer feedback.
+- **Reviewers** - Logical roles backed by models. Each agent uses a seed prompt to define its “personality” and evaluation lens.
+- **Council** - A collection of reviewer agents that critique and validate a central draft.
 
 
 ## How the App Works
@@ -36,12 +31,12 @@ This readme covers a high-level overview and the minimal steps required to run t
 
 
 ## Using the Application
-Open the application. If running locally, go to http://localhost:5000
+Open the application. If running locally, go to http://localhost:5000. This is the home page where you will begin your experience
 
 ![Diagram](/images/mainpage-empty.png)
 
 ### Step 1: Configure Models
-
+Before you create agents, you need to be able to configure the app with your models and provide the endpoint and API Key info. These details will be used when the model is invoked by the agent.
 - Navigate to **Configure Models**
 - Provide:
   - API Endpoint
@@ -53,38 +48,36 @@ Open the application. If running locally, go to http://localhost:5000
 ![Diagram](/images/modeladditionwizard.png)
 
 ### Step 2: Configure the Agent Council
+Now it's time to configure your reviewers. These are personas that will evaluate the generated content and provide actionable input to the Creator agent. By default the app comes configured with a default reviewer which you can customize to your liking.
 
-- Create one or more reviewer agents
-- Assign seed prompts to define each agent’s perspective
-- Agents can be tailored for:
-  - Technical review
-  - Decision analysis
-  - Content quality
-  - Risk evaluation
+![Diagram](/images/reviewers-base.png)
 
-  > Pre-configured agent templates are planned for future releases.
-
-![Diagram](/images/mainpage-base.png)
+Additionally, the app features a gallery of reviewer templates that are designed to excel at specific tasks like data analytics, Code appropriateness, security controls etc. You can add these reviewer personas by clicking the Add reviewer button. 
 
 ![Diagram](/images/reviewertemplates.png)
 
-### Step 3: Start a Session
+You can also customize them by modifying the root prompt, once they are added.
+
+> **Note**: In theory, you can add unlimited number of reviewers. However, beware that, just like in real life, more reviewers cause more churn towards converging the topic. So be mindful of adding more than 3-4 reviewers.
+
+![Diagram](/images/mainpage-base.png)
+
+### Step 3: Define a topic and Start a Session
 
 - Define a clear, well-scoped topic
-- Choose:
-  - **Continuous mode** (automatic iteration)
-  - **Step-wise mode** (manual review between iterations)
+- Choose between:
+  - **Start** (automatically go through iterations until convergence)
+  - **Step-Once mode** (manual review between iterations)
 - Start the session and observe deliberation in real time
 
 ![Diagram](/images/mainpage-filled.png)
 
 ## Additional Capabilities
-
-- Session controls (pause, reset, download transcript). Configurable session-level constraints and enforcement rules
-![Diagram](/images/sessionsettings.png)
-
-- Live interaction stream via SignalR
+- You can view the Live interaction stream between the agents by clicking the "View Agent Interactions" button. This will give you a pretty good idea of what each of the agents are sending out in each iteration.
 ![Diagram](/images/interactionstream.png)
+
+- Session controls (pause, reset, download transcript) and Configurable session-level constraints and enforcement rules are accessible from the Seccion settings fly out. Click the gear icon next to the Stop button to access this.
+![Diagram](/images/sessionsettings.png)
 
 ## Running the App Locally
 
