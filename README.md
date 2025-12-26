@@ -2,13 +2,13 @@
 ## 📚 Table of Contents
 
 - [Overview](#Overview)
-- [Quick Start](#-quick-start-5-minutes)
+- [Quick Start](#quick-start-5-minutes)
 - [Visual Walkthrough](#visual-walkthrough)
 - [How It Works (Conceptual Architecture)](#how-it-works-conceptual-architecture)
 - [Example Use Cases](#example-use-cases)
 - [Planned enhancements](#planned-enhancements)
 - [Contributing](#contributing-)
-- [License](#-license)
+- [License](#license)
 
 ## Overview
 **AI Decision Council** is a lightweight **ASP.NET Core web application** that enables **structured, multi-agent AI deliberation**, producing higher-quality, more defensible outcomes by coordinating multiple AI reviewers under a single decision-making authority. In short: it brings **governance, review, and synthesis** to AI-generated decisions.
