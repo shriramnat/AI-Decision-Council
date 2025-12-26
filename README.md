@@ -36,6 +36,9 @@ This readme covers a high-level overview and the minimal steps required to run t
 
 
 ## Using the Application
+Open the application. If running locally, go to http://localhost:5000
+
+![Diagram](/images/mainpage-empty.png)
 
 ### Step 1: Configure Models
 
@@ -46,6 +49,8 @@ This readme covers a high-level overview and the minimal steps required to run t
   - Model Type
 - Optionally export or import a `.modelsettings` file for reuse or versioning
 > You can also add additional models to the app from this page. Models can be added from **OpenAI, xAI or those hosted in the Microsoft AI foundry Service**. Google and Anthropic implementations will be added later. (Feel free to contribute!)
+
+![Diagram](/images/modeladditionwizard.png)
 
 ### Step 2: Configure the Agent Council
 
@@ -59,6 +64,10 @@ This readme covers a high-level overview and the minimal steps required to run t
 
   > Pre-configured agent templates are planned for future releases.
 
+![Diagram](/images/mainpage-base.png)
+
+![Diagram](/images/reviewertemplates.png)
+
 ### Step 3: Start a Session
 
 - Define a clear, well-scoped topic
@@ -67,11 +76,15 @@ This readme covers a high-level overview and the minimal steps required to run t
   - **Step-wise mode** (manual review between iterations)
 - Start the session and observe deliberation in real time
 
+![Diagram](/images/mainpage-filled.png)
+
 ## Additional Capabilities
 
-- Session controls (pause, reset, download transcript)
+- Session controls (pause, reset, download transcript). Configurable session-level constraints and enforcement rules
+![Diagram](/images/sessionsettings.png)
+
 - Live interaction stream via SignalR
-- Configurable session-level constraints and enforcement rules
+![Diagram](/images/interactionstream.png)
 
 ## Running the App Locally
 
