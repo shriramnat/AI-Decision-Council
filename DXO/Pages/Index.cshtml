@@ -238,6 +238,22 @@
     </div>
 </div>
 
+<!-- Reviewer Selection Flyout -->
+<div id="reviewerSelectionFlyout" class="flyout-overlay hidden">
+    <div class="flyout-panel">
+        <div class="flyout-header">
+            <h3>Select a Reviewer Template</h3>
+            <button class="flyout-close" onclick="dxoApp.closeReviewerSelector()">&times;</button>
+        </div>
+        <div class="flyout-body">
+            <p class="flyout-hint">Choose a reviewer agent template to add to your council:</p>
+            <div id="reviewerTemplatesGrid" class="reviewer-templates-grid">
+                <!-- Reviewer template cards will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Reviewer Card Template (Hidden) -->
 <template id="reviewerCardTemplate">
     <div class="persona-card reviewer" data-agent-type="reviewer" data-reviewer-id="">

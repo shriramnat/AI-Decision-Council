@@ -18,7 +18,7 @@ class DXOApp {
         await this.loadConfig();
         this.setupSignalR();
         this.setupEventListeners();
-        this.loadDefaultPrompts();
+        await this.loadDefaultPrompts(); // Load prompts from agentconfigurations.json
         this.createToastContainer();
         this.addDefaultReviewer(); // Add one default reviewer
 
@@ -96,9 +96,31 @@ Output format:
 If and only if the draft is publication-ready from your perspective, include the token @@SIGNED OFF@@ on its own line at the end.`;
     }
 
-    // Add a default reviewer on init
-    addDefaultReviewer() {
-        this.addReviewer('Reviewer 1', this.getDefaultReviewerPrompt(1));
+    // Add a default reviewer on init - loads from agentconfigurations.json
+    async addDefaultReviewer() {
+        try {
+            const response = await fetch('/agentconfigurations.json');
+            if (!response.ok) {
+                throw new Error('Failed to load agent configurations');
+            }
+            
+            const config = await response.json();
+            const customReviewer = config.agents?.reviewers?.find(r => r.agentId === 'CustomReviewer');
+            
+            if (customReviewer && customReviewer.prompt) {
+                // Format the prompt by replacing \n with actual line breaks
+                const formattedPrompt = customReviewer.prompt.replace(/\\n/g, '\n');
+                this.addReviewer(customReviewer.role, formattedPrompt);
+            } else {
+                // Fallback to default prompt if Custom Reviewer not found
+                console.warn('Custom Reviewer not found in agentconfigurations.json, using fallback');
+                this.addReviewer('Reviewer 1', this.getDefaultReviewerPrompt(1));
+            }
+        } catch (error) {
+            console.error('Failed to load default reviewer:', error);
+            // Use fallback on error
+            this.addReviewer('Reviewer 1', this.getDefaultReviewerPrompt(1));
+        }
     }
 
     // Add a new reviewer
@@ -224,11 +246,11 @@ If and only if the draft is publication-ready from your perspective, include the
     // Update reviewer card colors based on their index
     updateReviewerColors() {
         const colors = [
-            { border: 'rgba(100, 210, 255, 0.3)', bg: 'rgba(100, 210, 255, 0.1)', text: '#64d2ff' },
-            { border: 'rgba(255, 159, 10, 0.3)', bg: 'rgba(255, 159, 10, 0.1)', text: '#ff9f0a' },
-            { border: 'rgba(48, 209, 88, 0.3)', bg: 'rgba(48, 209, 88, 0.1)', text: '#30d158' },
-            { border: 'rgba(255, 69, 58, 0.3)', bg: 'rgba(255, 69, 58, 0.1)', text: '#ff453a' },
-            { border: 'rgba(191, 90, 242, 0.3)', bg: 'rgba(191, 90, 242, 0.1)', text: '#bf5af2' }
+            { border: 'rgba(100, 210, 255, 0.3)', text: '#64d2ff' },
+            { border: 'rgba(255, 159, 10, 0.3)', text: '#ff9f0a' },
+            { border: 'rgba(48, 209, 88, 0.3)', text: '#30d158' },
+            { border: 'rgba(255, 69, 58, 0.3)', text: '#ff453a' },
+            { border: 'rgba(191, 90, 242, 0.3)', text: '#bf5af2' }
         ];
 
         const cards = document.querySelectorAll('#reviewerCardsContainer .persona-card');
@@ -242,9 +264,25 @@ If and only if the draft is publication-ready from your perspective, include the
         });
     }
 
-    // Load default prompts
-    loadDefaultPrompts() {
-        const creatorPrompt = `You are DXO Creator, an expert technical author. Your job is to write high-quality technical content for a technical audience.
+    // Load default prompts from agentconfigurations.json
+    async loadDefaultPrompts() {
+        try {
+            const response = await fetch('/agentconfigurations.json');
+            if (!response.ok) {
+                throw new Error('Failed to load agent configurations');
+            }
+            
+            const config = await response.json();
+            const creatorConfig = config.agents?.creator;
+            
+            if (creatorConfig && creatorConfig.prompt) {
+                // Format the prompt by replacing \n with actual line breaks
+                const formattedPrompt = creatorConfig.prompt.replace(/\\n/g, '\n');
+                document.getElementById('creatorPrompt').value = formattedPrompt;
+            } else {
+                // Fallback to default prompt if not found in JSON
+                console.warn('Creator prompt not found in agentconfigurations.json, using fallback');
+                const fallbackPrompt = `You are DXO Creator, an expert technical author. Your job is to write high-quality technical content for a technical audience.
 
 Authoring rules:
 1) Structure the content with clear sections appropriate to the topic.
@@ -254,8 +292,12 @@ Authoring rules:
 5) Maintain internal consistency across sections.
 6) Incorporate feedback from ALL reviewers explicitly.
 7) When complete (after ALL reviewers approve), output: FINAL: followed by the final content.`;
-
-        document.getElementById('creatorPrompt').value = creatorPrompt;
+                document.getElementById('creatorPrompt').value = fallbackPrompt;
+            }
+        } catch (error) {
+            console.error('Failed to load default prompts:', error);
+            this.showToast('Failed to load Creator prompt from configuration', 'warning');
+        }
     }
 
     // Setup SignalR connection
@@ -304,10 +346,6 @@ Authoring rules:
             this.updateIterationCount(iteration);
         });
 
-        this.connection.on('IterationCompleted', (sessionId, iteration) => {
-            // Iteration complete
-        });
-
         // Message events
         this.connection.on('MessageStarted', (sessionId, messageId, persona, iteration) => {
             this.startStreamingMessage(messageId, persona, iteration);
@@ -353,11 +391,9 @@ Authoring rules:
         // Memory reset buttons
         document.getElementById('btnResetCreator').addEventListener('click', () => this.resetPersonaMemory('Creator'));
 
-        // Add Reviewer button
+        // Add Reviewer button - open selector flyout
         document.getElementById('btnAddReviewer').addEventListener('click', () => {
-            const reviewerNumber = this.reviewers.length + 1;
-            this.addReviewer(`Reviewer ${reviewerNumber}`, this.getDefaultReviewerPrompt(reviewerNumber));
-            this.showToast('Reviewer added', 'success');
+            this.openReviewerSelector();
         });
 
         // Output buttons
@@ -724,14 +760,6 @@ Authoring rules:
             };
         }
         
-        // Legacy support for Reviewer1/Reviewer2
-        if (persona === 'Reviewer1') {
-            return { icon: '🔍', color: 'reviewer1', name: 'Reviewer 1' };
-        }
-        if (persona === 'Reviewer2') {
-            return { icon: '📝', color: 'reviewer2', name: 'Reviewer 2' };
-        }
-        
         return { icon: '💬', color: 'system', name: persona };
     }
 
@@ -975,6 +1003,99 @@ Authoring rules:
     closeInteractionStream() {
         const lightbox = document.getElementById('interactionStreamLightbox');
         lightbox.classList.add('hidden');
+    }
+
+    // Open reviewer selector flyout
+    async openReviewerSelector() {
+        const flyout = document.getElementById('reviewerSelectionFlyout');
+        flyout.classList.remove('hidden');
+        
+        // Load templates every time the flyout opens
+        await this.loadReviewerTemplates();
+    }
+
+    // Close reviewer selector flyout
+    closeReviewerSelector() {
+        const flyout = document.getElementById('reviewerSelectionFlyout');
+        flyout.classList.add('hidden');
+    }
+
+    // Load reviewer templates from JSON
+    async loadReviewerTemplates() {
+        const grid = document.getElementById('reviewerTemplatesGrid');
+        grid.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Loading templates...</p>';
+        
+        try {
+            const response = await fetch('/agentconfigurations.json');
+            if (!response.ok) {
+                throw new Error('Failed to load agent configurations');
+            }
+            
+            const config = await response.json();
+            const reviewerTemplates = config.agents?.reviewers || [];
+            
+            if (reviewerTemplates.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No reviewer templates found.</p>';
+                return;
+            }
+            
+            // Clear grid and populate with template cards
+            grid.innerHTML = '';
+            
+            reviewerTemplates.forEach(template => {
+                const card = this.createTemplateCard(template);
+                grid.appendChild(card);
+            });
+            
+        } catch (error) {
+            console.error('Failed to load reviewer templates:', error);
+            grid.innerHTML = '<p style="color: var(--danger-color); text-align: center;">Failed to load templates. Please try again.</p>';
+            this.showToast('Failed to load reviewer templates', 'error');
+        }
+    }
+
+    // Create a template card element
+    createTemplateCard(template) {
+        const card = document.createElement('div');
+        card.className = 'reviewer-template-card';
+        
+        // Get category badge class
+        const categoryClass = template.category.toLowerCase().replace('-', '-');
+        
+        // Extract first line of prompt as description (if available)
+        const promptLines = template.prompt.split('\\n');
+        const description = promptLines.length > 1 ? promptLines[1].trim() : 'Click to add this reviewer';
+        
+        card.innerHTML = `
+            <div class="template-card-header">
+                <h4 class="template-card-title">${template.role}</h4>
+                <span class="template-category-badge ${categoryClass}">${template.category}</span>
+            </div>
+            <p class="template-card-description">${description}</p>
+        `;
+        
+        // Add click handler
+        card.addEventListener('click', () => {
+            this.selectReviewerTemplate(template);
+        });
+        
+        return card;
+    }
+
+    // Handle template selection
+    selectReviewerTemplate(template) {
+        // Format the prompt by replacing \n with actual line breaks
+        const formattedPrompt = template.prompt.replace(/\\n/g, '\n');
+        
+        // Add reviewer with template data
+        const reviewerNumber = this.reviewers.length + 1;
+        this.addReviewer(template.role, formattedPrompt);
+        
+        // Close the flyout
+        this.closeReviewerSelector();
+        
+        // Show success message
+        this.showToast(`Added ${template.role}`, 'success');
     }
 
     // Check if a model is from xAI (Grok models)
