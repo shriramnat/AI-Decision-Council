@@ -21,8 +21,6 @@ This readme covers a high-level overview and the minimal steps required to run t
 
 ## How the App Works
 
-
-
 1. **Draft Creation**  
    The Creator agent generates an initial draft from the provided topic.
 
@@ -47,7 +45,7 @@ This readme covers a high-level overview and the minimal steps required to run t
   - API Key
   - Model Type
 - Optionally export or import a `.modelsettings` file for reuse or versioning
-- You can also add additional models to the app from this page
+> You can also add additional models to the app from this page. Models can be added from **OpenAI, xAI or those hosted in the Microsoft AI foundry Service**. Google and Anthropic implementations will be added later. (Feel free to contribute!)
 
 ### Step 2: Configure the Agent Council
 
@@ -75,8 +73,6 @@ This readme covers a high-level overview and the minimal steps required to run t
 - Live interaction stream via SignalR
 - Configurable session-level constraints and enforcement rules
 
-
-
 ## Running the App Locally
 
 ### Prerequisites
@@ -88,7 +84,8 @@ This readme covers a high-level overview and the minimal steps required to run t
 Optional: Visual Studio, VS Code, or another IDE
 
 ### Clone the Repository
-  ```powershellgit clone https://github.com/shriramnat/AI-Decision-Council.git
+  ```powershell
+  git clone https://github.com/shriramnat/AI-Decision-Council.git
 cd AI-Decision-Council
 ```
 ### Build the Application
@@ -107,15 +104,9 @@ Alternatively, open DXO.sln in Visual Studio and build the solution.
 >- Serves Razor Pages and exposes a SignalR hub for real-time client updates
 
 ### Configuration Notes
-
-- API keys and credentials are read from:
-  - appsettings.json
-  - appsettings.Development.json
-  - Environment variables
-
-- Server URLs and ports can be configured via:
-  - DXO/Properties/launchSettings.json
-  - The ASPNETCORE_URLS environment variable
+Server URLs and ports can be configured via:
+- DXO/Properties/launchSettings.json
+- The ASPNETCORE_URLS environment variable
 
 ### Security Features
 
