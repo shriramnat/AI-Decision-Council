@@ -37,6 +37,7 @@ public class OrchestrationService : IOrchestrationService
     private readonly IServiceScopeFactory _scopeFactory;
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, CancellationTokenSource> _sessionCancellations = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, bool> _sessionNeedsFinalIteration = new();
     
     private const string ReviewerSystemPrompt = @"You are DXO Reviewer. Critique the draft for correctness, clarity, completeness, and rubric adherence. Provide actionable revisions and a checklist. If acceptable, include @@SIGNED OFF@@.";
 
@@ -278,10 +279,40 @@ public class OrchestrationService : IOrchestrationService
 
         await _hubContext.Clients.Group(sessionId.ToString()).SessionStarted(sessionId);
 
-        while (!cancellationToken.IsCancellationRequested && session.CurrentIteration < session.MaxIterations)
+        // Check if we need a final iteration flag
+        _sessionNeedsFinalIteration.TryGetValue(sessionId, out bool needsFinalIteration);
+
+        while (!cancellationToken.IsCancellationRequested && 
+               (session.CurrentIteration < session.MaxIterations || needsFinalIteration))
         {
             var shouldStop = await RunSingleIterationInternalAsync(dbContext, session, cancellationToken);
             if (shouldStop) break;
+
+            // Update the flag after each iteration
+            _sessionNeedsFinalIteration.TryGetValue(sessionId, out needsFinalIteration);
+
+            // If we just completed the final iteration after all reviewers signed off
+            if (needsFinalIteration && session.CurrentIteration > session.MaxIterations)
+            {
+                session.Status = SessionStatus.Completed;
+                session.StopReason = StopReason.ReviewerApproved;
+
+                var lastCreatorMessage = session.Messages
+                    .Where(m => m.Persona == Persona.Creator)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .FirstOrDefault();
+
+                session.FinalContent = lastCreatorMessage?.Content;
+                session.UpdatedAt = DateTime.UtcNow;
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                await _hubContext.Clients.Group(sessionId.ToString())
+                    .SessionCompleted(sessionId, session.FinalContent ?? "", StopReason.ReviewerApproved.ToString());
+                
+                // Clean up flag
+                _sessionNeedsFinalIteration.TryRemove(sessionId, out _);
+                break;
+            }
 
             if (session.RunMode == RunMode.Step)
             {
@@ -292,8 +323,10 @@ public class OrchestrationService : IOrchestrationService
             }
         }
 
-        // Check if max iterations reached
-        if (session.CurrentIteration >= session.MaxIterations && session.Status == SessionStatus.Running)
+        // Check if max iterations reached without final iteration needed
+        if (session.CurrentIteration >= session.MaxIterations && 
+            session.Status == SessionStatus.Running && 
+            !needsFinalIteration)
         {
             session.Status = SessionStatus.Completed;
             session.StopReason = StopReason.MaxIterationsReached;
@@ -307,7 +340,11 @@ public class OrchestrationService : IOrchestrationService
             session.UpdatedAt = DateTime.UtcNow;
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            await _hubContext.Clients.Group(sessionId.ToString()).SessionCompleted(sessionId, session.FinalContent ?? "", StopReason.MaxIterationsReached.ToString());
+            await _hubContext.Clients.Group(sessionId.ToString())
+                .SessionCompleted(sessionId, session.FinalContent ?? "", StopReason.MaxIterationsReached.ToString());
+            
+            // Clean up flag if it exists
+            _sessionNeedsFinalIteration.TryRemove(sessionId, out _);
         }
     }
 
@@ -367,14 +404,9 @@ public class OrchestrationService : IOrchestrationService
 
         if (session.StopOnReviewerApproved && allApproved)
         {
-            session.Status = SessionStatus.Completed;
-            session.StopReason = StopReason.ReviewerApproved;
-            session.FinalContent = creatorContent;
-            session.UpdatedAt = DateTime.UtcNow;
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            await _hubContext.Clients.Group(session.SessionId.ToString()).SessionCompleted(session.SessionId, session.FinalContent, StopReason.ReviewerApproved.ToString());
-            return true;
+            // Don't stop yet - mark that we need one final Creator iteration to incorporate feedback
+            _sessionNeedsFinalIteration[session.SessionId] = true;
+            _logger.LogInformation("All reviewers signed off for session {SessionId}. Will run one final Creator iteration.", session.SessionId);
         }
 
         await _hubContext.Clients.Group(session.SessionId.ToString()).IterationCompleted(session.SessionId, session.CurrentIteration);
