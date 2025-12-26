@@ -95,7 +95,7 @@ Server URLs and ports can be configured via:
 ## Visual Walkthrough
 Open the application. If running locally, go to http://localhost:5000. This is the home page where you will begin your experience
 
-![Diagram](/images/mainpage-empty.png)
+![Diagram](/docs/images/mainpage-empty.png)
 
 ### Step 1: Configure Models
 Before you create agents, you need to be able to configure the app with your models and provide the endpoint and API Key info. These details will be used when the model is invoked by the agent.
@@ -107,22 +107,22 @@ Before you create agents, you need to be able to configure the app with your mod
 - Optionally export or import a `.modelsettings` file for reuse or versioning
 > You can also add additional models to the app from this page. Models can be added from **OpenAI, xAI or those hosted in the Microsoft AI foundry Service**. Google and Anthropic implementations will be added later. (Feel free to contribute!)
 
-![Diagram](/images/modeladditionwizard.png)
+![Diagram](/docs/images/modeladditionwizard.png)
 
 ### Step 2: Configure the Agent Council
 Now it's time to configure your reviewers. These are personas that will evaluate the generated content and provide actionable input to the Creator agent. By default the app comes configured with a default reviewer which you can customize to your liking.
 
-![Diagram](/images/reviewers-base.png)
+![Diagram](/docs/images/reviewers-base.png)
 
 Additionally, the app features a gallery of reviewer templates that are designed to excel at specific tasks like data analytics, Code appropriateness, security controls etc. You can add these reviewer personas by clicking the Add reviewer button. 
 
-![Diagram](/images/reviewertemplates.png)
+![Diagram](/docs/images/reviewertemplates.png)
 
 You can also customize them by modifying the root prompt, once they are added.
 
 > **Note**: In theory, you can add unlimited number of reviewers. However, beware that, just like in real life, more reviewers cause more churn towards converging the topic. So be mindful of adding more than 3-4 reviewers.
 
-![Diagram](/images/mainpage-base.png)
+![Diagram](/docs/images/mainpage-base.png)
 
 ### Step 3: Define a topic and Start a Session
 
@@ -132,14 +132,14 @@ You can also customize them by modifying the root prompt, once they are added.
   - **Step-Once mode** (manual review between iterations)
 - Start the session and observe deliberation in real time
 
-![Diagram](/images/mainpage-filled.png)
+![Diagram](/docs/images/mainpage-filled.png)
 
 ### Additional Capabilities
 - You can view the Live interaction stream between the agents by clicking the "View Agent Interactions" button. This will give you a pretty good idea of what each of the agents are sending out in each iteration.
-![Diagram](/images/interactionstream.png)
+![Diagram](/docs/images/interactionstream.png)
 
 - Session controls (pause, reset, download transcript) and Configurable session-level constraints and enforcement rules are accessible from the Seccion settings fly out. Click the gear icon next to the Stop button to access this.
-![Diagram](/images/sessionsettings.png)
+![Diagram](/docs/images/sessionsettings.png)
 
 ## Troubleshooting
 **Configuration Load Errors**
@@ -168,33 +168,34 @@ You can also customize them by modifying the root prompt, once they are added.
 
 4. **Final Output**  
    Once consensus is reached, the final version is produced.
-   
-```text
-User Prompt
-     |
-     v
-+-------------+
-|   Creator   |  ← Council Chair
-+-------------+
+    
+  ```text
+  User Prompt
       |
       v
-+-----------------------------+
-| Parallel AI Reviewers       |
-|  - Technical Reviewer       |
-|  - Policy Reviewer          |
-|  - Executive Reviewer       |
-+-----------------------------+
-      |
-      v
-+-------------+
-| Synthesis   |
-| Threshold   |
-| Evaluation  |
-+-------------+
-      |
-      v
-Final Output
-```
+  +----------------+
+  |     Creator     |
+  | (Council Chair) |←---------------------
+  +----------------+                      |
+        |                                 |
+        v                                 |
+  +-----------------------------+         |
+  | Parallel AI Reviewers       |         |
+  |  - Technical Reviewer       |         |
+  |  - Policy Reviewer          |         |
+  |  - Executive Reviewer       |         |
+  +-----------------------------+         |
+        |                                 |
+        v                                 |
+  +-------------+                         |
+  | Synthesis   |                         |
+  | Threshold   |--------------------------
+  | Evaluation  |
+  +-------------+
+        |
+        v
+  Final Output
+  ```
 
 The Creator agent determines:
 - Which feedback is relevant
