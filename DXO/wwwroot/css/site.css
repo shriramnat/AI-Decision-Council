@@ -28,16 +28,16 @@
     --text-tertiary: rgba(255, 255, 255, 0.5);
     --border-color: rgba(255, 149, 0, 0.2);
     
-    /* Persona colors - Orange-yellow variants */
+    /* Persona colors - Matching JavaScript dynamic palette */
     --creator-color: #ff9500;
     --creator-bg: rgba(255, 149, 0, 0.1);
     --creator-border: rgba(255, 149, 0, 0.4);
-    --reviewer1-color: #ffb340;
-    --reviewer1-bg: rgba(255, 179, 64, 0.1);
-    --reviewer1-border: rgba(255, 179, 64, 0.4);
-    --reviewer2-color: #ffa000;
-    --reviewer2-bg: rgba(255, 160, 0, 0.1);
-    --reviewer2-border: rgba(255, 160, 0, 0.4);
+    --reviewer1-color: #64d2ff;
+    --reviewer1-bg: rgba(100, 210, 255, 0.1);
+    --reviewer1-border: rgba(100, 210, 255, 0.3);
+    --reviewer2-color: #ff9f0a;
+    --reviewer2-bg: rgba(255, 159, 10, 0.1);
+    --reviewer2-border: rgba(255, 159, 10, 0.3);
     
     /* Shadows and effects - Orange glow */
     --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
@@ -713,32 +713,32 @@ a:active {
     color: var(--reviewer2-color);
 }
 
-/* Additional reviewer colors for dynamic reviewers - orange-yellow variants */
+/* Additional reviewer colors for dynamic reviewers - matching JavaScript palette */
 .persona-card.reviewer3 {
-    border-color: rgba(255, 193, 7, 0.4);
+    border-color: rgba(48, 209, 88, 0.3);
 }
 
 .persona-card.reviewer3 .card-header h3,
 .persona-card.reviewer3 .card-header .reviewer-name-container {
-    color: #ffc107;
+    color: #30d158;
 }
 
 .persona-card.reviewer4 {
-    border-color: rgba(255, 179, 64, 0.4);
+    border-color: rgba(255, 69, 58, 0.3);
 }
 
 .persona-card.reviewer4 .card-header h3,
 .persona-card.reviewer4 .card-header .reviewer-name-container {
-    color: #ffb340;
+    color: #ff453a;
 }
 
 .persona-card.reviewer5 {
-    border-color: rgba(255, 138, 0, 0.4);
+    border-color: rgba(191, 90, 242, 0.3);
 }
 
 .persona-card.reviewer5 .card-header h3,
 .persona-card.reviewer5 .card-header .reviewer-name-container {
-    color: #ff8a00;
+    color: #bf5af2;
 }
 
 /* Reviewer name container and editable input */
@@ -1112,32 +1112,32 @@ a:active {
     color: var(--reviewer2-color);
 }
 
-/* Additional message card colors for dynamic reviewers - orange-yellow variants */
+/* Additional message card colors for dynamic reviewers - matching JavaScript palette */
 .message-card.reviewer3 {
-    border-left-color: #ffc107;
-    background: rgba(255, 193, 7, 0.1);
+    border-left-color: #30d158;
+    background: rgba(48, 209, 88, 0.1);
 }
 
 .message-card.reviewer3 .message-persona {
-    color: #ffc107;
+    color: #30d158;
 }
 
 .message-card.reviewer4 {
-    border-left-color: #ffb340;
-    background: rgba(255, 179, 64, 0.1);
+    border-left-color: #ff453a;
+    background: rgba(255, 69, 58, 0.1);
 }
 
 .message-card.reviewer4 .message-persona {
-    color: #ffb340;
+    color: #ff453a;
 }
 
 .message-card.reviewer5 {
-    border-left-color: #ff8a00;
-    background: rgba(255, 138, 0, 0.1);
+    border-left-color: #bf5af2;
+    background: rgba(191, 90, 242, 0.1);
 }
 
 .message-card.reviewer5 .message-persona {
-    color: #ff8a00;
+    color: #bf5af2;
 }
 
 .message-timestamp,
