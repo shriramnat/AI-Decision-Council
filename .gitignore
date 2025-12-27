@@ -114,3 +114,6 @@ certificates/
 *.key
 *.cer
 *.crt
+
+# App settings
+appsettings.json
