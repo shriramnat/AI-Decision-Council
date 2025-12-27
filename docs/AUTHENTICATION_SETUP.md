@@ -12,6 +12,13 @@ The application now supports:
 - **Approved User List:** File-based authorization with hot-reload support
 - **Debug Logging:** Comprehensive authentication debug information
 
+> **⚠️ IMPORTANT:** Authentication secrets should **NOT** be stored in `appsettings.json`. 
+> 
+> 📖 **See [USER_SECRETS_SETUP.md](USER_SECRETS_SETUP.md)** for detailed instructions on:
+> - Setting up User Secrets for local development
+> - Configuring Azure App Service for production
+> - Managing and rotating secrets securely
+
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
