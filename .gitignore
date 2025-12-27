@@ -114,7 +114,3 @@ certificates/
 *.key
 *.cer
 *.crt
-
-# App settings - contains sensitive credentials
-appsettings.json
-DXO/appsettings.json
