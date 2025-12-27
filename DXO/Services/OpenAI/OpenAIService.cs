@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Chat;
 using DXO.Configuration;
-using DXO.Services.Settings;
 using DXO.Services.AzureAIFoundry;
 using DXO.Services.Models;
 

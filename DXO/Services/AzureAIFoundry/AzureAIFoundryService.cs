@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using DXO.Configuration;
-using DXO.Services.Settings;
 using DXO.Services.OpenAI;
 using DXO.Services.Models;
 
@@ -13,11 +12,6 @@ namespace DXO.Services.AzureAIFoundry;
 /// </summary>
 public interface IAzureAIFoundryService
 {
-    /// <summary>
-    /// Checks if Azure AI Foundry is properly configured
-    /// </summary>
-    bool HasConfiguration();
-
     /// <summary>
     /// Checks if an API key is configured for the given model
     /// </summary>
@@ -40,29 +34,18 @@ public interface IAzureAIFoundryService
 
 public class AzureAIFoundryService : IAzureAIFoundryService
 {
-    private readonly ISettingsService _settingsService;
     private readonly IModelManagementService _modelManagementService;
     private readonly ILogger<AzureAIFoundryService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
     public AzureAIFoundryService(
-        ISettingsService settingsService,
         IModelManagementService modelManagementService,
         IHttpClientFactory httpClientFactory,
         ILogger<AzureAIFoundryService> logger)
     {
         _logger = logger;
-        _settingsService = settingsService;
         _modelManagementService = modelManagementService;
         _httpClientFactory = httpClientFactory;
-    }
-
-    /// <summary>
-    /// Checks if Azure AI Foundry is properly configured (kept for interface compatibility)
-    /// </summary>
-    public bool HasConfiguration()
-    {
-        return true; // Configuration is checked when models are used
     }
 
     public bool HasApiKey(string? model = null)

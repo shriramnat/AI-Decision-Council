@@ -19,7 +19,6 @@ using DXO.Services.AzureAIFoundry;
 using DXO.Services.XAI;
 using DXO.Services.OpenAI;
 using DXO.Services.Orchestration;
-using DXO.Services.Settings;
 using DXO.Services.Models;
 using Polly;
 using Polly.Extensions.Http;
@@ -62,7 +61,6 @@ builder.Services.AddHttpClient("OpenAI", client =>
 .AddPolicyHandler(GetRetryPolicy(dxoConfig.MaxRetries));
 
 // Register services
-builder.Services.AddSingleton<ISettingsService, SettingsService>();
 builder.Services.AddSingleton<IModelManagementService, ModelManagementService>();
 builder.Services.AddSingleton<IModelProviderFactory, ModelProviderFactory>();
 builder.Services.AddSingleton<IAzureAIFoundryService, AzureAIFoundryService>();

@@ -30,7 +30,7 @@ public static class ModelProviderExtensions
         };
     }
 
-    public static ModelProvider FromString(string provider)
+    public static ModelProvider FromString(string? provider)
     {
         if (string.IsNullOrWhiteSpace(provider))
             return ModelProvider.OpenAI;
