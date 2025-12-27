@@ -271,7 +271,7 @@ dotnet run
 
 ### 2. Access Landing Page
 
-Navigate to: `https://localhost:5001/Landing` (or your configured URL)
+Navigate to: `http://localhost:5000/Landing` or `https://localhost:5001/Landing` (or your configured URL)
 
 ### 3. Test Each Provider
 
