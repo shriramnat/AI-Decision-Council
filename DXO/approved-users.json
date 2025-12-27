@@ -1,0 +1,5 @@
+{
+  "approvedUsers": ["*"],
+  "lastModified": "2025-12-26T00:00:00Z",
+  "comments": "Use * to allow all authenticated users, or list specific emails (e.g., user@example.com). Emails are case-insensitive."
+}

@@ -2,13 +2,19 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Web;
 using DXO.Configuration;
 using DXO.Data;
 using DXO.Hubs;
 using DXO.Models;
 using DXO.Services;
+using DXO.Services.Authorization;
 using DXO.Services.AzureAIFoundry;
 using DXO.Services.XAI;
 using DXO.Services.OpenAI;
@@ -65,6 +71,130 @@ builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 builder.Services.AddScoped<IModelInitializationService, ModelInitializationService>();
 builder.Services.AddScoped<IOrchestrationService, OrchestrationService>();
 
+// Register authorization services
+builder.Services.AddSingleton<IApprovedListService, FileApprovedListService>();
+builder.Services.AddSingleton<IAuthorizationHandler, ApprovedListAuthorizationHandler>();
+
+// Configure authentication options
+builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
+var authConfig = builder.Configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+
+// Configure authentication
+var authBuilder = builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+});
+
+if (authConfig.Enabled)
+{
+    // Full authentication with OIDC providers
+    builder.Services.AddLogging(logging => 
+        logging.AddConsole().AddDebug().SetMinimumLevel(LogLevel.Information));
+    
+    var logger = LoggerFactory.Create(config => config.AddConsole()).CreateLogger("Startup");
+    logger.LogInformation("Authentication is ENABLED - configuring OIDC providers");
+
+    // Add Entra ID (Azure AD) authentication
+    // This also adds Cookie authentication automatically
+    authBuilder.AddMicrosoftIdentityWebApp(options =>
+    {
+        options.Instance = authConfig.EntraId.Instance;
+        options.TenantId = authConfig.EntraId.TenantId;
+        options.ClientId = authConfig.EntraId.ClientId;
+        options.ClientSecret = authConfig.EntraId.ClientSecret;
+        options.CallbackPath = authConfig.EntraId.CallbackPath;
+        options.SignedOutCallbackPath = "/signout-callback-oidc";
+        options.SaveTokens = false;
+        
+        // Use authorization code flow (not hybrid flow)
+        // This avoids the need for id_token response type to be enabled
+        options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.Code;
+    }, cookieOptions =>
+    {
+        cookieOptions.Cookie.Name = "DXO.Auth";
+        cookieOptions.LoginPath = "/Landing";
+        cookieOptions.LogoutPath = "/Logout";
+        cookieOptions.AccessDeniedPath = "/Landing?authError=denied";
+        cookieOptions.ExpireTimeSpan = TimeSpan.FromMinutes(authConfig.Cookie.ExpireTimeMinutes);
+        cookieOptions.SlidingExpiration = true;
+        cookieOptions.Cookie.HttpOnly = true;
+        cookieOptions.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+            ? CookieSecurePolicy.SameAsRequest 
+            : CookieSecurePolicy.Always;
+        cookieOptions.Cookie.SameSite = SameSiteMode.Lax;
+    }, "EntraId");
+
+    // Add Microsoft Account authentication
+    authBuilder.AddMicrosoftAccount("Microsoft", options =>
+    {
+        options.ClientId = authConfig.MicrosoftAccount.ClientId;
+        options.ClientSecret = authConfig.MicrosoftAccount.ClientSecret;
+        options.CallbackPath = authConfig.MicrosoftAccount.CallbackPath;
+        options.SaveTokens = false;
+        
+        // Use /consumers endpoint for personal Microsoft accounts only
+        // This matches the app registration's "PersonalMicrosoftAccount" audience
+        options.AuthorizationEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
+        options.TokenEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+        
+        options.Scope.Add("openid");
+        options.Scope.Add("profile");
+        options.Scope.Add("email");
+    });
+
+    // Add Google authentication
+    authBuilder.AddGoogle(options =>
+    {
+        options.ClientId = authConfig.Google.ClientId;
+        options.ClientSecret = authConfig.Google.ClientSecret;
+        options.CallbackPath = authConfig.Google.CallbackPath;
+        options.SaveTokens = false;
+        options.Scope.Add("openid");
+        options.Scope.Add("profile");
+        options.Scope.Add("email");
+    });
+}
+else
+{
+    // Simplified authentication for development/testing
+    var logger = LoggerFactory.Create(config => config.AddConsole()).CreateLogger("Startup");
+    logger.LogWarning("⚠️  Authentication is DISABLED - using test account for development. DO NOT USE IN PRODUCTION!");
+    
+    // Add cookie authentication only (no OIDC providers)
+    authBuilder.AddCookie(options =>
+    {
+        options.Cookie.Name = "DXO.Auth";
+        options.LoginPath = "/Landing";
+        options.LogoutPath = "/Logout";
+        options.AccessDeniedPath = "/Landing?authError=denied";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(authConfig.Cookie.ExpireTimeMinutes);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+            ? CookieSecurePolicy.SameAsRequest 
+            : CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
+}
+
+// Configure authorization
+builder.Services.AddAuthorization(options =>
+{
+    // Default policy requires authentication + approved list
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .AddRequirements(new ApprovedListRequirement())
+        .Build();
+    
+    // Named policy for explicit use
+    options.AddPolicy("ApprovedUser", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new ApprovedListRequirement());
+    });
+});
+
 // Add SignalR
 builder.Services.AddSignalR(options =>
 {
@@ -108,6 +238,7 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
 
 var app = builder.Build();
 
@@ -154,7 +285,20 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseRateLimiter();
+
+// Handle authorization failures - redirect to Landing with error
+app.Use(async (context, next) =>
+{
+    await next();
+    
+    if (context.Response.StatusCode == 403 && !context.Response.HasStarted)
+    {
+        context.Response.Redirect("/Landing?authError=forbidden");
+    }
+});
 
 app.MapRazorPages();
 app.MapHub<DxoHub>("/hubs/dxo");

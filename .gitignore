@@ -105,3 +105,12 @@ nlog-*.log
 
 # Publish profiles
 PublishProfiles/
+
+# Certificates - NEVER commit these
+certificates/
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt

@@ -84,8 +84,21 @@ Server URLs and ports can be configured via:
 - DXO/Properties/launchSettings.json
 - The ASPNETCORE_URLS environment variable
 
-### Security Features
+### Security & Authentication
 
+The application now includes comprehensive authentication and authorization:
+
+- **Multiple Identity Providers:**
+  - Microsoft Entra ID (Azure AD) - Work/School accounts
+  - Microsoft Account - Personal accounts  
+  - Google - Personal accounts
+- **Approved User List:** File-based authorization with hot-reload
+- **Secure Sessions:** Cookie-based authentication with configurable timeout
+- **Debug Logging:** Comprehensive auth troubleshooting
+
+📖 **See [Authentication Setup Guide](docs/AUTHENTICATION_SETUP.md)** for detailed configuration instructions.
+
+Additional security features:
 - API keys stored server-side only (never sent to the browser)
 - Configurable per-IP rate limiting
 - Security headers (CSP, X-Frame-Options, etc.)

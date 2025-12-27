@@ -163,6 +163,99 @@ a:active {
     background: var(--primary-color);
 }
 
+/* User Menu */
+.user-menu {
+    position: relative;
+}
+
+.user-button {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    padding: 0;
+}
+
+.user-button:hover {
+    background: rgba(255, 149, 0, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: rgba(20, 20, 20, 0.98);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    min-width: 220px;
+    box-shadow: var(--shadow-lg);
+    display: none;
+    z-index: 1000;
+}
+
+.user-dropdown.show {
+    display: block;
+    animation: fadeInDown 0.2s ease;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-email {
+    padding: 0.875rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 0;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 149, 0, 0.1);
+    color: var(--primary-color);
+}
+
+.dropdown-item svg {
+    flex-shrink: 0;
+}
+
 /* Main Content */
 .main-content {
     padding: 1.5rem;
