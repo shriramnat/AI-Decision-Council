@@ -395,21 +395,38 @@
 
 /* Reviewer Template Cards */
 .reviewer-template-card {
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
 .reviewer-template-card:hover {
-    background: #f8fbff;
-    box-shadow: 0 12px 30px rgba(30, 107, 255, 0.16);
+    background: rgba(255, 149, 0, 0.1) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 12px 30px rgba(255, 149, 0, 0.3) !important;
 }
 
 .reviewer-template-card.disabled {
-    background: #f1f5f9;
+    background: rgba(0, 0, 0, 0.2) !important;
+    opacity: 0.5;
 }
 
 .reviewer-template-card.disabled:hover {
-    background: #f1f5f9;
-    box-shadow: none;
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-color: var(--glass-border) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.template-card-title {
+    color: var(--text-color) !important;
+}
+
+.template-card-description {
+    color: var(--text-secondary) !important;
+}
+
+.reviewer-template-card.disabled .template-card-description {
+    color: var(--text-tertiary) !important;
 }
 
 /* Modal */
