@@ -1,0 +1,582 @@
+/* DXO - Bright Aurora Theme (Light, Modern) */
+
+:root {
+    --primary-color: #1e6bff;
+    --primary-hover: #0f5adf;
+    --secondary-color: #61788a;
+    --success-color: #0ea35c;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #2563eb;
+
+    --bg-color: #f7f8fb;
+    --bg-gradient: linear-gradient(180deg, #f9fafb 0%, #f4f6f8 50%, #eef1f5 100%);
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #eef1f5;
+
+    --glass-bg: rgba(255, 255, 255, 0.96);
+    --glass-border: rgba(30, 107, 255, 0.12);
+    --glass-shadow: 0 12px 50px rgba(15, 23, 42, 0.12);
+    --glass-blur: blur(12px);
+
+    --text-color: #0f172a;
+    --text-secondary: #334155;
+    --text-tertiary: #64748b;
+    --border-color: #e2e8f0;
+
+    /* Persona palette (bright, distinct) */
+    --creator-color: #1e6bff;
+    --creator-bg: #eef4ff;
+    --creator-border: #bcd5ff;
+    --reviewer1-color: #0ea5e9;
+    --reviewer1-bg: #e0f4ff;
+    --reviewer1-border: #9edcff;
+    --reviewer2-color: #10b981;
+    --reviewer2-bg: #e2f7f0;
+    --reviewer2-border: #9ee9cb;
+    --reviewer3-color: #f59e0b;
+    --reviewer3-bg: #fff4de;
+    --reviewer3-border: #fbd39b;
+    --reviewer4-color: #a855f7;
+    --reviewer4-bg: #f5e8ff;
+    --reviewer4-border: #e1c3ff;
+    --reviewer5-color: #ef4444;
+    --reviewer5-bg: #ffe7e7;
+    --reviewer5-border: #f8b3b3;
+
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
+    --shadow-glow: 0 10px 30px rgba(30, 107, 255, 0.16);
+    
+    --radius: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Header */
+.header {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* User Button */
+.user-button {
+    background: #f1f5f9;
+}
+
+.user-button:hover {
+    background: #e5edff;
+}
+
+/* User Dropdown */
+.user-dropdown {
+    background: #ffffff;
+}
+
+/* Dropdown Item */
+.dropdown-item:hover {
+    background: rgba(30, 107, 255, 0.08);
+}
+
+/* Footer */
+.footer {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+/* Topic Section */
+.topic-section {
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+}
+
+.topic-header {
+    background: #000000 !important;
+}
+
+.topic-header h3 {
+    color: #ffffff !important;
+}
+
+.topic-body textarea {
+    background: #f8fafc;
+}
+
+.topic-body textarea:focus {
+    box-shadow: 0 0 0 4px rgba(30, 107, 255, 0.15);
+}
+
+/* Settings & Session Controls */
+.session-settings,
+.collapsible-section,
+.settings-card,
+.info-card,
+.output-panel,
+.trace-panel,
+.status-bar {
+    background: #ffffff;
+}
+
+.collapsible-header:hover {
+    background: #f8fbff;
+}
+
+.setting-inline input[type="text"],
+.setting-inline input[type="number"],
+.setting-inline select {
+    background: #ffffff;
+}
+
+/* Buttons */
+.btn {
+    box-shadow: 0 10px 20px rgba(30, 107, 255, 0.18);
+}
+
+.btn-primary {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(120deg, #0f5adf, #0284c7);
+    transform: translateY(-1px);
+}
+
+.btn-secondary,
+.btn-info {
+    background: #ffffff;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+}
+
+.btn-secondary:hover:not(:disabled),
+.btn-info:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+
+.btn-success {
+    background: linear-gradient(120deg, #0ea35c, #10b981);
+    color: #ffffff;
+}
+
+.btn-warning {
+    background: var(--danger-color);
+    color: #ffffff;
+}
+
+.btn-danger {
+    background: linear-gradient(120deg, #ef4444, #f87171);
+    color: #ffffff;
+}
+
+/* Persona Cards */
+.persona-card {
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.card-header {
+    background: #f8fbff;
+}
+
+/* Creator: black header */
+.persona-card.creator {
+    border-color: #0f172a;
+}
+
+.persona-card.creator .card-header {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.persona-card.creator .card-header h3,
+.persona-card.creator .reviewer-name-container {
+    color: #ffffff;
+}
+
+/* Reviewers: solid headers, white text */
+.persona-card.reviewer1 {
+    border-color: var(--reviewer1-border);
+}
+
+.persona-card.reviewer1 .card-header {
+    background: var(--reviewer1-color);
+    color: #ffffff;
+}
+
+.persona-card.reviewer1 .card-header h3,
+.persona-card.reviewer1 .reviewer-name-container {
+    color: #ffffff;
+}
+
+.persona-card.reviewer2 {
+    border-color: var(--reviewer2-border);
+}
+
+.persona-card.reviewer2 .card-header {
+    background: var(--reviewer2-color);
+    color: #ffffff;
+}
+
+.persona-card.reviewer2 .card-header h3,
+.persona-card.reviewer2 .reviewer-name-container {
+    color: #ffffff;
+}
+
+.persona-card.reviewer3 {
+    border-color: var(--reviewer3-border);
+}
+
+.persona-card.reviewer3 .card-header {
+    background: var(--reviewer3-color);
+    color: #ffffff;
+}
+
+.persona-card.reviewer3 .card-header h3,
+.persona-card.reviewer3 .reviewer-name-container {
+    color: #ffffff;
+}
+
+.persona-card.reviewer4 {
+    border-color: var(--reviewer4-border);
+}
+
+.persona-card.reviewer4 .card-header {
+    background: var(--reviewer4-color);
+    color: #ffffff;
+}
+
+.persona-card.reviewer4 .card-header h3,
+.persona-card.reviewer4 .reviewer-name-container {
+    color: #ffffff;
+}
+
+.persona-card.reviewer5 {
+    border-color: var(--reviewer5-border);
+}
+
+.persona-card.reviewer5 .card-header {
+    background: var(--reviewer5-color);
+    color: #ffffff;
+}
+
+.persona-card.reviewer5 .card-header h3,
+.persona-card.reviewer5 .reviewer-name-container {
+    color: #ffffff;
+}
+
+.reviewer-name-input {
+    background: #f8fafc;
+}
+
+.reviewer-name-input:hover {
+    background: #eef2f7;
+}
+
+.reviewer-name-input:focus {
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+/* Reviewer name input when placed inside colored card headers */
+.card-header .reviewer-name-input {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+}
+
+.card-header .reviewer-name-input:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+.card-header .reviewer-name-input:focus {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+
+/* Model selector in header */
+.card-header .model-select-header {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+}
+
+.card-header .model-select-header:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+.card-header .model-select-header:focus {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: #ffffff;
+}
+
+.card-header .model-select-header option {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+
+.model-select-header {
+    background: #ffffff;
+}
+
+.model-select-header:focus {
+    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.btn-add-reviewer:hover {
+    background: rgba(30, 107, 255, 0.08);
+}
+
+/* Card Body */
+.card-body textarea {
+    background: #f8fafc;
+}
+
+.card-body textarea:focus {
+    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.setting-group select,
+.setting-group input {
+    background: #ffffff;
+}
+
+.setting-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%231e6bff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.setting-group select option {
+    background: #ffffff;
+}
+
+.setting-group select:focus,
+.setting-group input:focus {
+    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.settings-grid {
+    background: #f8fbff;
+}
+
+/* Message Cards */
+.message-card {
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.message-card.creator {
+    background: linear-gradient(120deg, rgba(30, 107, 255, 0.06), #ffffff);
+    border-left-color: #0f172a;
+}
+
+.message-card.reviewer1 {
+    background: linear-gradient(120deg, rgba(14, 165, 233, 0.06), #ffffff);
+    border-left-color: var(--reviewer1-color);
+}
+
+.message-card.reviewer2 {
+    background: linear-gradient(120deg, rgba(16, 185, 129, 0.06), #ffffff);
+    border-left-color: var(--reviewer2-color);
+}
+
+.message-card.reviewer3 {
+    background: linear-gradient(120deg, rgba(245, 158, 11, 0.06), #ffffff);
+    border-left-color: var(--reviewer3-color);
+}
+
+.message-card.reviewer4 {
+    background: linear-gradient(120deg, rgba(168, 85, 247, 0.06), #ffffff);
+    border-left-color: var(--reviewer4-color);
+}
+
+.message-card.reviewer5 {
+    background: linear-gradient(120deg, rgba(239, 68, 68, 0.06), #ffffff);
+    border-left-color: var(--reviewer5-color);
+}
+
+.message-card.system {
+    background: linear-gradient(120deg, rgba(100, 116, 139, 0.08), #ffffff);
+    border-left-color: var(--secondary-color);
+}
+
+.message-header {
+    background: #f8fbff;
+}
+
+.message-card.creator .message-header {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.message-card.reviewer1 .message-header {
+    background: var(--reviewer1-color);
+    color: #ffffff;
+}
+
+.message-card.reviewer2 .message-header {
+    background: var(--reviewer2-color);
+    color: #ffffff;
+}
+
+.message-card.reviewer3 .message-header {
+    background: var(--reviewer3-color);
+    color: #ffffff;
+}
+
+.message-card.reviewer4 .message-header {
+    background: var(--reviewer4-color);
+    color: #ffffff;
+}
+
+.message-card.reviewer5 .message-header {
+    background: var(--reviewer5-color);
+    color: #ffffff;
+}
+
+.message-card.creator .message-persona,
+.message-card.reviewer1 .message-persona,
+.message-card.reviewer2 .message-persona,
+.message-card.reviewer3 .message-persona,
+.message-card.reviewer4 .message-persona,
+.message-card.reviewer5 .message-persona {
+    color: #ffffff;
+}
+
+.iteration-header {
+    background: #f8fbff;
+}
+
+/* Output Panel */
+.output-content textarea {
+    background: #f8fafc;
+}
+
+/* Flyouts */
+.flyout-overlay {
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.flyout-panel {
+    background: #ffffff;
+    box-shadow: -12px 0 40px rgba(15, 23, 42, 0.15);
+}
+
+.flyout-header {
+    background: #f8fbff;
+}
+
+.flyout-body {
+    background: #ffffff;
+}
+
+.flyout-close:hover {
+    background: #e8eef7;
+}
+
+/* Reviewer Template Cards */
+.reviewer-template-card {
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.reviewer-template-card:hover {
+    box-shadow: 0 12px 30px rgba(30, 107, 255, 0.16);
+}
+
+.reviewer-template-card.disabled {
+    background: #f1f5f9;
+}
+
+.reviewer-template-card.disabled:hover {
+    box-shadow: none;
+}
+
+/* Modal */
+.modal {
+    background: rgba(15, 23, 42, 0.5);
+}
+
+.modal-content {
+    background: #ffffff;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar-thumb {
+    background: rgba(30, 107, 255, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(30, 107, 255, 0.5);
+}
+
+/* Floating Action Buttons */
+.scroll-fab-btn {
+    background: linear-gradient(135deg, #1e6bff, #0ea5e9);
+    color: #ffffff;
+    box-shadow: 0 14px 30px rgba(30, 107, 255, 0.28);
+}
+
+.scroll-fab-btn:hover {
+    background: linear-gradient(135deg, #0f5adf, #0284c7);
+}
+
+.scroll-fab-btn.secondary {
+    background: linear-gradient(135deg, #0ea5e9, #22c55e);
+    color: #ffffff;
+}
+
+/* Toast */
+.toast {
+    background: #ffffff;
+    color: var(--text-color);
+}
+
+/* Settings Page */
+.settings-card .card-header {
+    background: #f8fbff;
+}
+
+.settings-card .card-header h2 {
+    color: var(--text-color);
+}
+
+.form-control {
+    background: #f8fafc;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.alert-success {
+    background: rgba(14, 163, 92, 0.1);
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Lightbox */
+.lightbox-overlay {
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.lightbox-content {
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+}
+
+.lightbox-header {
+    background: #f8fbff;
+}
+
+.lightbox-close:hover {
+    background: #e8eef7;
+}

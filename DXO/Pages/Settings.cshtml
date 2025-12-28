@@ -479,7 +479,7 @@
 
     .section-header h3 {
         margin: 0;
-        color: var(--text-primary, #fff);
+        color: var(--text-color);
         font-size: 1.1rem;
     }
 
@@ -497,22 +497,24 @@
     .models-table {
         width: 100%;
         border-collapse: collapse;
-        background: var(--bg-secondary, #1a1a1a);
-        border-radius: 8px;
+        background: #ffffff;
+        border: 1px solid var(--border-color, #dce3ec);
+        border-radius: 12px;
         overflow: hidden;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
     }
 
     .models-table th,
     .models-table td {
         padding: 0.75rem;
         text-align: left;
-        border-bottom: 1px solid var(--border-color, #333);
+        border-bottom: 1px solid var(--border-color, #e5e7eb);
     }
 
     .models-table th {
-        background: var(--bg-tertiary, #252525);
+        background: #f8fbff;
         font-weight: 600;
-        color: var(--text-primary, #fff);
+        color: var(--text-color);
     }
 
     .models-table tr:last-child td {
@@ -520,7 +522,7 @@
     }
 
     .models-table tr:hover {
-        background: var(--bg-tertiary, #252525);
+        background: #f5f7fb;
     }
 
     .model-endpoint {
@@ -543,17 +545,18 @@
     .editable-input {
         width: 100%;
         padding: 0.4rem 0.6rem;
-        background: var(--bg-primary, #0d0d0d);
-        border: 1px solid var(--border-color, #333);
-        border-radius: 4px;
-        color: var(--text-primary, #fff);
+        background: #f8fafc;
+        border: 1px solid var(--border-color, #dce3ec);
+        border-radius: 8px;
+        color: var(--text-color);
         font-size: 0.9rem;
         transition: border-color 0.2s;
     }
 
     .editable-input:focus {
         outline: none;
-        border-color: var(--accent-color, #007bff);
+        border-color: var(--primary-color, #1e6bff);
+        box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
     }
 
     .name-input {
@@ -651,8 +654,9 @@
         right: -500px;
         width: 500px;
         height: 100vh;
-        background: #1a1a1a;
-        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+        background: #ffffff;
+        box-shadow: -16px 0 40px rgba(15, 23, 42, 0.12);
+        border-left: 1px solid var(--border-color, #dce3ec);
         transition: right 0.3s ease;
         z-index: 1000;
     }
@@ -672,12 +676,13 @@
         justify-content: space-between;
         align-items: center;
         padding: 1.5rem;
-        border-bottom: 1px solid var(--border-color, #333);
+        border-bottom: 1px solid var(--border-color, #dce3ec);
+        background: #f8fbff;
     }
 
     .flyout-header h3 {
         margin: 0;
-        color: var(--text-primary, #fff);
+        color: var(--text-color);
     }
 
     .flyout-close {
@@ -685,24 +690,27 @@
         border: none;
         font-size: 2rem;
         cursor: pointer;
-        color: var(--text-secondary, #999);
+        color: var(--text-secondary, #6b7280);
         line-height: 1;
         padding: 0;
     }
 
     .flyout-close:hover {
-        color: var(--text-primary, #fff);
+        color: var(--text-color);
+        background: #eef2f7;
+        border-radius: 8px;
     }
 
     .flyout-body {
         flex: 1;
         padding: 1.5rem;
         overflow-y: auto;
+        background: #ffffff;
     }
 
     .flyout-footer {
         padding: 1.5rem;
-        border-top: 1px solid var(--border-color, #333);
+        border-top: 1px solid var(--border-color, #dce3ec);
         display: flex;
         gap: 1rem;
         justify-content: flex-start;

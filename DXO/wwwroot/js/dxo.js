@@ -246,20 +246,29 @@ If and only if the draft is publication-ready from your perspective, include the
     // Update reviewer card colors based on their index
     updateReviewerColors() {
         const colors = [
-            { border: 'rgba(100, 210, 255, 0.3)', text: '#64d2ff' },
-            { border: 'rgba(255, 159, 10, 0.3)', text: '#ff9f0a' },
-            { border: 'rgba(48, 209, 88, 0.3)', text: '#30d158' },
-            { border: 'rgba(255, 69, 58, 0.3)', text: '#ff453a' },
-            { border: 'rgba(191, 90, 242, 0.3)', text: '#bf5af2' }
+            { border: 'rgba(100, 210, 255, 0.3)', bg: '#0ea5e9' },
+            { border: 'rgba(255, 159, 10, 0.3)', bg: '#f59e0b' },
+            { border: 'rgba(48, 209, 88, 0.3)', bg: '#10b981' },
+            { border: 'rgba(255, 69, 58, 0.3)', bg: '#ef4444' },
+            { border: 'rgba(191, 90, 242, 0.3)', bg: '#a855f7' }
         ];
 
         const cards = document.querySelectorAll('#reviewerCardsContainer .persona-card');
         cards.forEach((card, index) => {
             const colorSet = colors[index % colors.length];
             card.style.borderColor = colorSet.border;
-            const header = card.querySelector('.card-header h3, .card-header .reviewer-name-container');
+            const header = card.querySelector('.card-header');
             if (header) {
-                header.style.color = colorSet.text;
+                header.style.backgroundColor = colorSet.bg;
+                header.style.color = '#ffffff';
+                const headerText = header.querySelector('h3, .reviewer-name-container');
+                if (headerText) {
+                    headerText.style.color = '#ffffff';
+                }
+                const nameInput = header.querySelector('.reviewer-name-input');
+                if (nameInput) {
+                    nameInput.style.color = '#ffffff';
+                }
             }
         });
     }

@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - AI Decision Council</title>
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site-base.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/theme-light.css" id="themeStylesheet" asp-append-version="true" />
 </head>
 <body>
     <header class="header">
@@ -28,6 +29,17 @@
                         <div class="user-dropdown" id="userDropdown">
                             <div class="user-email">@(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value ?? User.FindFirst("preferred_username")?.Value ?? "User")</div>
                             <div class="dropdown-divider"></div>
+                            
+                            <!-- Theme Picker -->
+                            <div class="dropdown-item" id="themePicker" style="flex-direction: column; align-items: stretch; gap: 0.5rem; cursor: default;">
+                                <span style="font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.03em;">Theme</span>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="theme-option" data-theme="light" title="Light Theme">☀️</button>
+                                    <button class="theme-option" data-theme="dark" title="Dark Theme">🌙</button>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            
                             <a href="/Logout" class="dropdown-item">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -91,6 +103,43 @@
                 }
             });
         }
+
+        // Theme switching functionality
+        (function() {
+            const THEME_KEY = 'dxo-theme';
+            const themeStylesheet = document.getElementById('themeStylesheet');
+            const themeButtons = document.querySelectorAll('.theme-option');
+            
+            // Get saved theme or default to 'light'
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+            
+            // Apply saved theme on load
+            applyTheme(savedTheme);
+            
+            // Setup theme button listeners
+            themeButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const theme = btn.dataset.theme;
+                    applyTheme(theme);
+                    localStorage.setItem(THEME_KEY, theme);
+                });
+            });
+            
+            function applyTheme(theme) {
+                const cssPath = `/css/theme-${theme}.css?v=` + new Date().getTime();
+                themeStylesheet.setAttribute('href', cssPath);
+                
+                // Update active button state
+                themeButtons.forEach(btn => {
+                    if (btn.dataset.theme === theme) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>

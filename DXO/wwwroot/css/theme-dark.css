@@ -1,0 +1,582 @@
+/* DXO - Dark Glassmorphism Theme */
+
+:root {
+    /* Orange-yellow accent theme */
+    --primary-color: #ff9500;
+    --primary-hover: #ffa726;
+    --secondary-color: #86868b;
+    --success-color: #30d158;
+    --warning-color: #ff9f0a;
+    --danger-color: #ff453a;
+    --info-color: #ff9500;
+    
+    /* Backgrounds - Pure black theme */
+    --bg-color: #000000;
+    --bg-gradient: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #000000 100%);
+    --bg-secondary: rgba(255, 255, 255, 0.03);
+    --bg-tertiary: rgba(255, 255, 255, 0.05);
+    
+    /* Glass effect colors with orange tint */
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 149, 0, 0.2);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --glass-blur: blur(20px);
+    
+    /* Text colors - White for accessibility (WCAG AA compliant) */
+    --text-color: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-tertiary: rgba(255, 255, 255, 0.5);
+    --border-color: rgba(255, 149, 0, 0.2);
+    
+    /* Persona colors - Matching JavaScript dynamic palette */
+    --creator-color: #ff9500;
+    --creator-bg: rgba(255, 149, 0, 0.1);
+    --creator-border: rgba(255, 149, 0, 0.4);
+    --reviewer1-color: #64d2ff;
+    --reviewer1-bg: rgba(100, 210, 255, 0.1);
+    --reviewer1-border: rgba(100, 210, 255, 0.3);
+    --reviewer2-color: #ff9f0a;
+    --reviewer2-bg: rgba(255, 159, 10, 0.1);
+    --reviewer2-border: rgba(255, 159, 10, 0.3);
+    
+    /* Shadows and effects - Orange glow */
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+    --shadow-glow: 0 0 40px rgba(255, 149, 0, 0.2);
+    --radius: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Header */
+.header {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* User Button */
+.user-button:hover {
+    background: rgba(255, 149, 0, 0.1);
+}
+
+/* User Dropdown */
+.user-dropdown {
+    background: rgba(20, 20, 20, 0.98);
+}
+
+/* Dropdown Item */
+.dropdown-item:hover {
+    background: rgba(255, 149, 0, 0.1);
+}
+
+/* Topic Section */
+.topic-header {
+    background: #000000;
+}
+
+.topic-header h3 {
+    color: #ffffff;
+}
+
+.topic-body textarea {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.topic-body textarea:focus {
+    box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.2);
+}
+
+/* Settings & Session Controls */
+.setting-inline input[type="text"],
+.setting-inline input[type="number"],
+.setting-inline select {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Buttons - Grey theme */
+.btn-primary {
+    background: #4a4a4a;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #5a5a5a;
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: #3a3a3a;
+    color: var(--text-color);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #4a4a4a;
+}
+
+.btn-success {
+    background: #4a4a4a;
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #5a5a5a;
+}
+
+.btn-warning {
+    background: #4a4a4a;
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #5a5a5a;
+}
+
+.btn-danger {
+    background: #4a4a4a;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #5a5a5a;
+}
+
+.btn-info {
+    background: #4a4a4a;
+    color: var(--text-color);
+    border: 1px solid rgba(255, 149, 0, 0.3);
+}
+
+.btn-info:hover:not(:disabled) {
+    background: #5a5a5a;
+}
+
+/* Collapsible Sections */
+.collapsible-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Persona Cards */
+.persona-card {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.persona-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.persona-card.creator {
+    border-color: var(--creator-border);
+}
+
+.persona-card.reviewer1 {
+    border-color: var(--reviewer1-border);
+}
+
+.persona-card.reviewer2 {
+    border-color: var(--reviewer2-border);
+}
+
+.persona-card.reviewer3 {
+    border-color: rgba(48, 209, 88, 0.3);
+}
+
+.persona-card.reviewer4 {
+    border-color: rgba(255, 69, 58, 0.3);
+}
+
+.persona-card.reviewer5 {
+    border-color: rgba(191, 90, 242, 0.3);
+}
+
+.card-header {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.persona-card.creator .card-header h3 {
+    color: var(--creator-color);
+}
+
+.persona-card.reviewer1 .card-header h3 {
+    color: var(--reviewer1-color);
+}
+
+.persona-card.reviewer2 .card-header h3 {
+    color: var(--reviewer2-color);
+}
+
+.persona-card.reviewer3 .card-header h3,
+.persona-card.reviewer3 .reviewer-name-container {
+    color: #30d158;
+}
+
+.persona-card.reviewer4 .card-header h3,
+.persona-card.reviewer4 .reviewer-name-container {
+    color: #ff453a;
+}
+
+.persona-card.reviewer5 .card-header h3,
+.persona-card.reviewer5 .reviewer-name-container {
+    color: #bf5af2;
+}
+
+.reviewer-name-input:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.reviewer-name-input:focus {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.model-select-header {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.model-select-header:focus {
+    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.15);
+}
+
+.model-select-header option {
+    background: #000000;
+}
+
+.btn-add-reviewer:hover {
+    background: rgba(255, 149, 0, 0.1);
+}
+
+/* Card Body */
+.card-body textarea {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.card-body textarea:focus {
+    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.15);
+}
+
+.setting-group select,
+.setting-group input {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.setting-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.setting-group select option {
+    background: #000000;
+}
+
+.setting-group select option:hover,
+.setting-group select option:focus,
+.setting-group select option:checked {
+    background: var(--primary-color);
+    color: black;
+}
+
+.settings-grid {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Message Cards */
+.message-card {
+    background: #ffffff;
+    border-left-color: transparent;
+}
+
+.message-card:hover {
+    background: #f8fbff;
+}
+
+.message-card.creator {
+    border-left-color: #0f172a;
+}
+
+.message-card.reviewer1 {
+    border-left-color: var(--reviewer1-color);
+}
+
+.message-card.reviewer2 {
+    border-left-color: var(--reviewer2-color);
+}
+
+.message-card.reviewer3 {
+    border-left-color: #30d158;
+}
+
+.message-card.reviewer4 {
+    border-left-color: #ff453a;
+}
+
+.message-card.reviewer5 {
+    border-left-color: #bf5af2;
+}
+
+.message-card.system {
+    border-left-color: var(--secondary-color);
+}
+
+.message-header {
+    background: #f8fbff;
+}
+
+.message-card.creator .message-header {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.message-card.reviewer1 .message-header {
+    background: var(--reviewer1-color);
+    color: #ffffff;
+}
+
+.message-card.reviewer2 .message-header {
+    background: var(--reviewer2-color);
+    color: #ffffff;
+}
+
+.message-card.reviewer3 .message-header {
+    background: #30d158;
+    color: #ffffff;
+}
+
+.message-card.reviewer4 .message-header {
+    background: #ff453a;
+    color: #ffffff;
+}
+
+.message-card.reviewer5 .message-header {
+    background: #bf5af2;
+    color: #ffffff;
+}
+
+.message-card.creator .message-persona,
+.message-card.reviewer1 .message-persona,
+.message-card.reviewer2 .message-persona,
+.message-card.reviewer3 .message-persona,
+.message-card.reviewer4 .message-persona,
+.message-card.reviewer5 .message-persona {
+    color: #ffffff;
+}
+
+.message-content.collapsed::after {
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.3));
+}
+
+.iteration-header {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Output Panel */
+.output-content textarea {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Flyouts */
+.flyout-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.flyout-panel {
+    background: rgba(15, 15, 15, 0.98);
+    box-shadow: -8px 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.flyout-header {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.flyout-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Reviewer Template Cards */
+.reviewer-template-card {
+    background: #ffffff;
+}
+
+.reviewer-template-card:hover {
+    background: #f8fbff;
+    box-shadow: 0 12px 30px rgba(30, 107, 255, 0.16);
+}
+
+.reviewer-template-card.disabled {
+    background: #f1f5f9;
+}
+
+.reviewer-template-card.disabled:hover {
+    background: #f1f5f9;
+    box-shadow: none;
+}
+
+/* Modal */
+.modal {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    background: rgba(30, 30, 30, 0.95);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 149, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 149, 0, 0.5);
+}
+
+/* Floating Action Buttons */
+.scroll-fab-btn {
+    background: var(--primary-color);
+    color: black;
+    box-shadow: 0 6px 20px rgba(255, 149, 0, 0.4);
+}
+
+.scroll-fab-btn:hover {
+    background: var(--primary-hover);
+}
+
+.scroll-fab-btn.secondary {
+    background: var(--primary-color);
+    color: black;
+}
+
+/* Toast */
+.toast {
+    background: rgba(30, 30, 30, 0.95);
+}
+
+/* Settings Page */
+.settings-card .card-header {
+    background: #000000;
+}
+
+.settings-card .card-header h2 {
+    color: #ffffff;
+}
+
+.form-control {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.15);
+}
+
+.alert-success {
+    background: rgba(48, 209, 88, 0.15);
+}
+
+.alert-error {
+    background: rgba(255, 69, 58, 0.15);
+}
+
+/* Lightbox */
+.lightbox-overlay {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-content {
+    background: rgba(15, 15, 15, 0.98);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.lightbox-header {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Settings Page - Models Table (with higher specificity) */
+.models-table {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.models-table th {
+    background: rgba(0, 0, 0, 0.4) !important;
+    color: var(--text-color) !important;
+}
+
+.models-table td {
+    color: var(--text-color) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+}
+
+.models-table tr:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.models-table tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* Editable inputs in table */
+.editable-input,
+.name-input,
+.endpoint-input,
+.apikey-input {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: var(--text-color) !important;
+}
+
+.editable-input:focus,
+.name-input:focus,
+.endpoint-input:focus,
+.apikey-input:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.15) !important;
+}
+
+/* Section headers */
+.section-header h3 {
+    color: var(--text-color) !important;
+}
+
+/* Empty state */
+.empty-state {
+    color: var(--text-secondary) !important;
+}
+
+/* Flyout (Settings Page) */
+.flyout {
+    background: rgba(15, 15, 15, 0.98) !important;
+    border-left: 1px solid var(--glass-border) !important;
+    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+.flyout-header {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+}
+
+.flyout-header h3 {
+    color: var(--text-color) !important;
+}
+
+.flyout-body {
+    background: rgba(15, 15, 15, 0.98) !important;
+}
+
+.flyout-footer {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-top: 1px solid var(--glass-border) !important;
+}
+
+.flyout-close {
+    color: var(--text-secondary) !important;
+}
+
+.flyout-close:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-color) !important;
+}
