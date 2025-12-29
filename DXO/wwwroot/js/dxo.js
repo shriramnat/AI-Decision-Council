@@ -1274,23 +1274,55 @@ Authoring rules:
         return html;
     }
 
-    // Show full draft in a modal or expanded view
-    async showFullDraft(iteration) {
+    // Show full draft in a modal
+    showFullDraft(iteration) {
         if (!this.currentSessionId) return;
 
+        // Find the draft content from already loaded feedback rounds
+        const container = document.getElementById('feedbackRoundsList');
+        const roundCard = container.querySelector(`[data-iteration="${iteration}"]`);
+        
+        if (!roundCard) {
+            this.showToast('Draft content not found', 'error');
+            return;
+        }
+
+        // Get draft content from data attribute or re-fetch if needed
+        this.showDraftModal(iteration);
+    }
+
+    // Show draft modal with content
+    async showDraftModal(iteration) {
         try {
+            // Fetch only the specific feedback round we need
             const response = await fetch(`/api/session/${this.currentSessionId}/feedback-rounds`);
+            if (!response.ok) {
+                throw new Error('Failed to load draft');
+            }
+
             const feedbackRounds = await response.json();
             const round = feedbackRounds.find(r => r.iteration === iteration);
             
-            if (round && round.draftContent) {
-                // Show in a simple alert for now (can be improved with a modal)
-                alert(`Iteration ${iteration} - Full Draft:\n\n${round.draftContent}`);
+            if (!round || !round.draftContent) {
+                this.showToast('Draft content not available', 'warning');
+                return;
             }
+
+            // Update modal content
+            document.getElementById('draftModalTitle').textContent = `Iteration ${iteration} - Full Draft`;
+            document.getElementById('draftModalContent').textContent = round.draftContent;
+            
+            // Show modal
+            document.getElementById('fullDraftModal').classList.remove('hidden');
         } catch (error) {
             console.error('Failed to load draft:', error);
             this.showToast('Failed to load draft', 'error');
         }
+    }
+
+    // Close draft modal
+    closeDraftModal() {
+        document.getElementById('fullDraftModal').classList.add('hidden');
     }
 
     // Submit user feedback for a specific iteration
@@ -1316,11 +1348,12 @@ Authoring rules:
                 this.showToast('Feedback submitted successfully', 'success');
                 await this.loadFeedbackRounds(); // Reload to show the submitted feedback
             } else {
-                throw new Error('Failed to submit feedback');
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to submit feedback');
             }
         } catch (error) {
             console.error('Failed to submit feedback:', error);
-            this.showToast('Failed to submit feedback', 'error');
+            this.showToast(error.message || 'Failed to submit feedback', 'error');
         }
     }
 

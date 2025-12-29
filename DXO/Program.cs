@@ -443,14 +443,42 @@ app.MapPost("/api/session/{id:guid}/reset-memory/{persona}", async (Guid id, str
 
 app.MapGet("/api/session/{id:guid}/feedback-rounds", async (Guid id, IOrchestrationService orchestration, CancellationToken ct) =>
 {
+    var session = await orchestration.GetSessionAsync(id, ct);
+    if (session == null)
+    {
+        return Results.NotFound(new { error = "Session not found" });
+    }
+    
     var feedbackRounds = await orchestration.GetFeedbackRoundsAsync(id, ct);
     return Results.Ok(feedbackRounds);
 });
 
-app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, SubmitFeedbackRequest request, IOrchestrationService orchestration, CancellationToken ct) =>
+app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, SubmitFeedbackRequest? request, IOrchestrationService orchestration, CancellationToken ct) =>
 {
-    await orchestration.SubmitUserFeedbackAsync(id, request.Iteration, request.Feedback, ct);
-    return Results.Ok(new { success = true });
+    if (request == null)
+    {
+        return Results.BadRequest(new { error = "Request body is required" });
+    }
+    
+    if (string.IsNullOrWhiteSpace(request.Feedback))
+    {
+        return Results.BadRequest(new { error = "Feedback cannot be empty" });
+    }
+    
+    if (request.Iteration < 1)
+    {
+        return Results.BadRequest(new { error = "Iteration must be greater than 0" });
+    }
+    
+    try
+    {
+        await orchestration.SubmitUserFeedbackAsync(id, request.Iteration, request.Feedback, ct);
+        return Results.Ok(new { success = true });
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
 });
 
 app.MapGet("/api/config", async (IOptions<DxoOptions> options, IModelManagementService modelService) =>

@@ -274,6 +274,16 @@ public class OrchestrationService : IOrchestrationService
 
     public async Task SubmitUserFeedbackAsync(Guid sessionId, int iteration, string feedback, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(feedback))
+        {
+            throw new ArgumentException("Feedback cannot be empty or whitespace", nameof(feedback));
+        }
+
+        if (iteration < 1)
+        {
+            throw new ArgumentException("Iteration must be greater than 0", nameof(iteration));
+        }
+
         var feedbackRound = await _dbContext.FeedbackRounds
             .FirstOrDefaultAsync(fr => fr.SessionId == sessionId && fr.Iteration == iteration, cancellationToken);
 
@@ -282,7 +292,7 @@ public class OrchestrationService : IOrchestrationService
             throw new InvalidOperationException($"Feedback round for session {sessionId} iteration {iteration} not found");
         }
 
-        feedbackRound.UserFeedback = feedback;
+        feedbackRound.UserFeedback = feedback.Trim();
         feedbackRound.UserFeedbackAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
