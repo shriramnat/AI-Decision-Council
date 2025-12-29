@@ -154,6 +154,14 @@ You can also customize them by modifying the root prompt, once they are added.
 - Session controls (pause, reset, download transcript) and Configurable session-level constraints and enforcement rules are accessible from the Seccion settings fly out. Click the gear icon next to the Stop button to access this.
 ![Diagram](/docs/images/sessionsettings.png)
 
+- **Feedback History**: View and provide feedback on each iteration of the Council's deliberations. The feedback history panel shows:
+  - Draft content from each iteration
+  - Reviewer feedback summaries with approval status
+  - Your own feedback submissions for audit trail
+  - Timestamps for all feedback activities
+
+This feature enables audit-friendly tracking of the entire decision-making process, allowing you to provide input on specific iterations and review the complete history of the Council's work.
+
 ## Troubleshooting
 **Configuration Load Errors**
 - Ensure the application is running and accessible

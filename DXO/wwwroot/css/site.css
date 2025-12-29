@@ -2611,3 +2611,174 @@ a:hover {
 .advanced-settings summary {
     color: var(--text-secondary);
 }
+
+/* Feedback History Styles */
+.feedback-history-panel {
+    margin-top: 2rem;
+}
+
+.feedback-rounds-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.feedback-round-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.feedback-round-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.feedback-round-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feedback-round-header .timestamp {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-success {
+    background-color: #e6f4ea;
+    color: #1e8e3e;
+}
+
+.feedback-round-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.draft-content-section,
+.reviewer-feedback-section,
+.user-feedback-section {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+}
+
+.draft-content-section h5,
+.reviewer-feedback-section h5,
+.user-feedback-section h5 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.draft-preview {
+    padding: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin-bottom: 0.5rem;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.reviewer-feedback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.reviewer-feedback-item {
+    padding: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.reviewer-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.reviewer-comment {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.no-feedback {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.user-feedback-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    resize: vertical;
+    margin-bottom: 0.5rem;
+}
+
+.user-feedback-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.user-feedback-text {
+    padding: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin: 0 0 0.5rem 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.feedback-timestamp {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.draft-modal-content {
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 70vh;
+    overflow-y: auto;
+}

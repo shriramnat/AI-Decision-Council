@@ -25,6 +25,8 @@ public interface IOrchestrationService
     Task DeleteSessionAsync(Guid sessionId, CancellationToken cancellationToken = default);
     Task ResetPersonaMemoryAsync(Guid sessionId, Persona persona, CancellationToken cancellationToken = default);
     void CancelSession(Guid sessionId);
+    Task<List<FeedbackRound>> GetFeedbackRoundsAsync(Guid sessionId, CancellationToken cancellationToken = default);
+    Task SubmitUserFeedbackAsync(Guid sessionId, int iteration, string feedback, CancellationToken cancellationToken = default);
 }
 
 public class OrchestrationService : IOrchestrationService
@@ -262,6 +264,41 @@ public class OrchestrationService : IOrchestrationService
         await _hubContext.Clients.Group(sessionId.ToString()).PersonaMemoryReset(sessionId, persona.ToString());
     }
 
+    public async Task<List<FeedbackRound>> GetFeedbackRoundsAsync(Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.FeedbackRounds
+            .Where(fr => fr.SessionId == sessionId)
+            .OrderBy(fr => fr.Iteration)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task SubmitUserFeedbackAsync(Guid sessionId, int iteration, string feedback, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(feedback))
+        {
+            throw new ArgumentException("Feedback cannot be empty or whitespace", nameof(feedback));
+        }
+
+        if (iteration < 1)
+        {
+            throw new ArgumentException("Iteration must be greater than 0", nameof(iteration));
+        }
+
+        var feedbackRound = await _dbContext.FeedbackRounds
+            .FirstOrDefaultAsync(fr => fr.SessionId == sessionId && fr.Iteration == iteration, cancellationToken);
+
+        if (feedbackRound == null)
+        {
+            throw new InvalidOperationException($"Feedback round for session {sessionId} iteration {iteration} not found");
+        }
+
+        feedbackRound.UserFeedback = feedback.Trim();
+        feedbackRound.UserFeedbackAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("User feedback submitted for session {SessionId} iteration {Iteration}", sessionId, iteration);
+    }
+
     private async Task RunOrchestrationLoopAsync(Guid sessionId, CancellationToken cancellationToken)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -401,6 +438,27 @@ public class OrchestrationService : IOrchestrationService
 
         // Check if ALL reviewers approved
         bool allApproved = reviewerResults.Count > 0 && reviewerResults.All(r => r.Approved);
+
+        // Create feedback round for audit trail
+        var reviewerFeedbackSummaries = reviewerResults.Select(r => new ReviewerFeedbackSummary
+        {
+            ReviewerId = r.Reviewer.Id,
+            ReviewerName = r.Reviewer.Name,
+            Feedback = r.Content,
+            Approved = r.Approved
+        }).ToList();
+
+        var feedbackRound = new FeedbackRound
+        {
+            SessionId = session.SessionId,
+            Iteration = session.CurrentIteration,
+            DraftContent = creatorContent,
+            AllReviewersApproved = allApproved,
+            ReviewerFeedbackJson = JsonSerializer.Serialize(reviewerFeedbackSummaries)
+        };
+
+        dbContext.FeedbackRounds.Add(feedbackRound);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         if (session.StopOnReviewerApproved && allApproved)
         {
@@ -737,6 +795,15 @@ public class ReviewerRequest
     public double? TopP { get; set; }
     public double? PresencePenalty { get; set; }
     public double? FrequencyPenalty { get; set; }
+}
+
+/// <summary>
+/// Request model for submitting user feedback on a feedback round
+/// </summary>
+public class SubmitFeedbackRequest
+{
+    public int Iteration { get; set; }
+    public string Feedback { get; set; } = string.Empty;
 }
 
 #endregion
