@@ -158,6 +158,26 @@
             placeholder="Final output will appear here when the Creator finalizes the content or the session is stopped..."></textarea>
     </div>
 </section>
+<br />
+<!-- Feedback History Panel -->
+<section class="feedback-history-panel collapsible-section collapsed" id="feedbackHistorySection">
+    <div class="collapsible-header" onclick="toggleSection('feedbackHistorySection')">
+        <h3>📋 Feedback History</h3>
+        <div class="collapsible-chevron">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+        </div>
+    </div>
+    <div class="collapsible-content">
+        <div id="feedbackRoundsList" class="feedback-rounds-list">
+            <div class="empty-state">
+                <p>No feedback rounds yet. Start a session to see iteration history.</p>
+            </div>
+        </div>
+    </div>
+</section>
 
 </div>
 

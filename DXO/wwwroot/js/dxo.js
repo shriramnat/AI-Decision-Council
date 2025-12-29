@@ -340,6 +340,7 @@ Authoring rules:
             this.updateButtonStates();
             document.getElementById('finalOutput').value = finalContent;
             this.showToast(`Session completed: ${stopReason}`, 'success');
+            this.loadFeedbackRounds(); // Load feedback rounds when session completes
         });
 
         this.connection.on('SessionError', (sessionId, error) => {
@@ -353,6 +354,11 @@ Authoring rules:
         this.connection.on('IterationStarted', (sessionId, iteration) => {
             this.addIterationHeader(iteration);
             this.updateIterationCount(iteration);
+        });
+
+        this.connection.on('IterationCompleted', (sessionId, iteration) => {
+            // Load feedback rounds after each iteration completes
+            this.loadFeedbackRounds();
         });
 
         // Message events
@@ -1185,6 +1191,144 @@ Authoring rules:
             presencePenalty.parentElement.title = '';
             frequencyPenalty.parentElement.title = '';
         }
+    }
+
+    // Load feedback rounds for the current session
+    async loadFeedbackRounds() {
+        if (!this.currentSessionId) return;
+
+        try {
+            const response = await fetch(`/api/session/${this.currentSessionId}/feedback-rounds`);
+            const feedbackRounds = await response.json();
+            this.displayFeedbackRounds(feedbackRounds);
+        } catch (error) {
+            console.error('Failed to load feedback rounds:', error);
+            this.showToast('Failed to load feedback history', 'error');
+        }
+    }
+
+    // Display feedback rounds in the UI
+    displayFeedbackRounds(feedbackRounds) {
+        const container = document.getElementById('feedbackRoundsList');
+        
+        if (!feedbackRounds || feedbackRounds.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No feedback rounds yet. Start a session to see iteration history.</p></div>';
+            return;
+        }
+
+        let html = '';
+        feedbackRounds.forEach(round => {
+            const reviewerFeedback = round.reviewerFeedbackJson ? JSON.parse(round.reviewerFeedbackJson) : [];
+            const approvedBadge = round.allReviewersApproved ? '<span class="badge badge-success">✓ All Approved</span>' : '';
+            
+            html += `
+                <div class="feedback-round-card" data-iteration="${round.iteration}">
+                    <div class="feedback-round-header">
+                        <h4>Iteration ${round.iteration} ${approvedBadge}</h4>
+                        <span class="timestamp">${new Date(round.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div class="feedback-round-body">
+                        <div class="draft-content-section">
+                            <h5>Creator's Draft:</h5>
+                            <div class="draft-preview">${this.escapeHtml(round.draftContent || 'No draft available').substring(0, 300)}...</div>
+                            <button class="btn btn-small btn-secondary" onclick="dxoApp.showFullDraft(${round.iteration})">View Full Draft</button>
+                        </div>
+                        <div class="reviewer-feedback-section">
+                            <h5>Reviewer Feedback:</h5>
+                            ${this.renderReviewerFeedback(reviewerFeedback)}
+                        </div>
+                        <div class="user-feedback-section">
+                            <h5>Your Feedback:</h5>
+                            ${round.userFeedback 
+                                ? `<p class="user-feedback-text">${this.escapeHtml(round.userFeedback)}</p>
+                                   <span class="feedback-timestamp">Submitted: ${new Date(round.userFeedbackAt).toLocaleString()}</span>`
+                                : `<textarea id="userFeedback_${round.iteration}" class="user-feedback-input" placeholder="Add your feedback for this iteration..."></textarea>
+                                   <button class="btn btn-small btn-primary" onclick="dxoApp.submitUserFeedback(${round.iteration})">Submit Feedback</button>`
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render reviewer feedback
+    renderReviewerFeedback(reviewerFeedback) {
+        if (!reviewerFeedback || reviewerFeedback.length === 0) {
+            return '<p class="no-feedback">No reviewer feedback available</p>';
+        }
+
+        let html = '<div class="reviewer-feedback-list">';
+        reviewerFeedback.forEach(rf => {
+            const approvedIcon = rf.approved ? '✓' : '';
+            html += `
+                <div class="reviewer-feedback-item">
+                    <div class="reviewer-name">${this.escapeHtml(rf.reviewerName)} ${approvedIcon}</div>
+                    <div class="reviewer-comment">${this.escapeHtml(rf.feedback).substring(0, 200)}...</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        return html;
+    }
+
+    // Show full draft in a modal or expanded view
+    async showFullDraft(iteration) {
+        if (!this.currentSessionId) return;
+
+        try {
+            const response = await fetch(`/api/session/${this.currentSessionId}/feedback-rounds`);
+            const feedbackRounds = await response.json();
+            const round = feedbackRounds.find(r => r.iteration === iteration);
+            
+            if (round && round.draftContent) {
+                // Show in a simple alert for now (can be improved with a modal)
+                alert(`Iteration ${iteration} - Full Draft:\n\n${round.draftContent}`);
+            }
+        } catch (error) {
+            console.error('Failed to load draft:', error);
+            this.showToast('Failed to load draft', 'error');
+        }
+    }
+
+    // Submit user feedback for a specific iteration
+    async submitUserFeedback(iteration) {
+        if (!this.currentSessionId) return;
+
+        const feedbackTextarea = document.getElementById(`userFeedback_${iteration}`);
+        const feedback = feedbackTextarea?.value.trim();
+
+        if (!feedback) {
+            this.showToast('Please enter feedback before submitting', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/session/${this.currentSessionId}/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ iteration, feedback })
+            });
+
+            if (response.ok) {
+                this.showToast('Feedback submitted successfully', 'success');
+                await this.loadFeedbackRounds(); // Reload to show the submitted feedback
+            } else {
+                throw new Error('Failed to submit feedback');
+            }
+        } catch (error) {
+            console.error('Failed to submit feedback:', error);
+            this.showToast('Failed to submit feedback', 'error');
+        }
+    }
+
+    // Helper to escape HTML
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
     }
 }
 
