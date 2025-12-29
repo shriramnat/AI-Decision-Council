@@ -63,6 +63,11 @@ public class Session
     /// Navigation property for messages in this session
     /// </summary>
     public virtual ICollection<Message> Messages { get; set; } = new List<Message>();
+
+    /// <summary>
+    /// Navigation property for feedback rounds in this session
+    /// </summary>
+    public virtual ICollection<FeedbackRound> FeedbackRounds { get; set; } = new List<FeedbackRound>();
 }
 
 /// <summary>

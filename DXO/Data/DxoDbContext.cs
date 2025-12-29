@@ -15,6 +15,7 @@ public class DxoDbContext : DbContext
     public DbSet<Session> Sessions { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
     public DbSet<ConfiguredModel> ConfiguredModels { get; set; } = null!;
+    public DbSet<FeedbackRound> FeedbackRounds { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +61,20 @@ public class DxoDbContext : DbContext
             entity.Property(e => e.Endpoint).IsRequired().HasMaxLength(500);
             entity.HasIndex(e => e.ModelName).IsUnique();
             entity.HasIndex(e => e.CreatedAt);
+        });
+
+        // FeedbackRound configuration
+        modelBuilder.Entity<FeedbackRound>(entity =>
+        {
+            entity.HasKey(e => e.FeedbackRoundId);
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => new { e.SessionId, e.Iteration });
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Session)
+                  .WithMany(s => s.FeedbackRounds)
+                  .HasForeignKey(e => e.SessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

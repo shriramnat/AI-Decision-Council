@@ -441,6 +441,18 @@ app.MapPost("/api/session/{id:guid}/reset-memory/{persona}", async (Guid id, str
     return Results.Ok(new { success = true });
 });
 
+app.MapGet("/api/session/{id:guid}/feedback-rounds", async (Guid id, IOrchestrationService orchestration, CancellationToken ct) =>
+{
+    var feedbackRounds = await orchestration.GetFeedbackRoundsAsync(id, ct);
+    return Results.Ok(feedbackRounds);
+});
+
+app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, SubmitFeedbackRequest request, IOrchestrationService orchestration, CancellationToken ct) =>
+{
+    await orchestration.SubmitUserFeedbackAsync(id, request.Iteration, request.Feedback, ct);
+    return Results.Ok(new { success = true });
+});
+
 app.MapGet("/api/config", async (IOptions<DxoOptions> options, IModelManagementService modelService) =>
 {
     var config = options.Value;
