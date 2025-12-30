@@ -228,36 +228,45 @@
                         placeholder="Describe what you'd like the Council to revise in the output. Be specific about what needs to change."></textarea>
                     
                     <!-- Optional Constraints -->
-                    <div class="feedback-constraints collapsed">
-                        <h4>Optional Constraints</h4>
-                        <div class="constraints-grid">
-                            <div class="constraint-group">
-                                <label for="feedbackTone">Tone:</label>
-                                <select id="feedbackTone" class="form-control">
-                                    <option value="">Same</option>
-                                    <option value="more-executive">More Executive</option>
-                                    <option value="more-technical">More Technical</option>
-                                    <option value="more-casual">More Casual</option>
-                                    <option value="more-formal">More Formal</option>
-                                </select>
+                    <div class="feedback-constraints collapsible-section collapsed" id="feedbackConstraintsSection">
+                        <div class="collapsible-header" onclick="toggleSection('feedbackConstraintsSection')">
+                            <h4>Optional Constraints</h4>
+                            <div class="collapsible-chevron">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
                             </div>
-                            <div class="constraint-group">
-                                <label for="feedbackLength">Length:</label>
-                                <select id="feedbackLength" class="form-control">
-                                    <option value="">Same</option>
-                                    <option value="shorter">Shorter</option>
-                                    <option value="expand">Expand</option>
-                                </select>
-                            </div>
-                            <div class="constraint-group">
-                                <label for="feedbackAudience">Audience:</label>
-                                <select id="feedbackAudience" class="form-control">
-                                    <option value="">Same</option>
-                                    <option value="leadership">Leadership</option>
-                                    <option value="engineers">Engineers</option>
-                                    <option value="general">General</option>
-                                    <option value="experts">Domain Experts</option>
-                                </select>
+                        </div>
+                        <div class="collapsible-content">
+                            <div class="constraints-grid" style="padding-top: 1rem;">
+                                <div class="constraint-group">
+                                    <label for="feedbackTone">Tone:</label>
+                                    <select id="feedbackTone" class="form-control">
+                                        <option value="">Same</option>
+                                        <option value="more-executive">More Executive</option>
+                                        <option value="more-technical">More Technical</option>
+                                        <option value="more-casual">More Casual</option>
+                                        <option value="more-formal">More Formal</option>
+                                    </select>
+                                </div>
+                                <div class="constraint-group">
+                                    <label for="feedbackLength">Length:</label>
+                                    <select id="feedbackLength" class="form-control">
+                                        <option value="">Same</option>
+                                        <option value="shorter">Shorter</option>
+                                        <option value="expand">Expand</option>
+                                    </select>
+                                </div>
+                                <div class="constraint-group">
+                                    <label for="feedbackAudience">Audience:</label>
+                                    <select id="feedbackAudience" class="form-control">
+                                        <option value="">Same</option>
+                                        <option value="leadership">Leadership</option>
+                                        <option value="engineers">Engineers</option>
+                                        <option value="general">General</option>
+                                        <option value="experts">Domain Experts</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

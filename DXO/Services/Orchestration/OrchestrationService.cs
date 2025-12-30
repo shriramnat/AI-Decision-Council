@@ -42,7 +42,13 @@ public class OrchestrationService : IOrchestrationService
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, CancellationTokenSource> _sessionCancellations = new();
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, bool> _sessionNeedsFinalIteration = new();
     
-    private const string ReviewerSystemPrompt = @"You are DXO Reviewer. Critique the draft for correctness, clarity, completeness, and rubric adherence. Provide actionable revisions and a checklist. If acceptable, include @@SIGNED OFF@@.";
+    private const string ReviewerSystemPrompt = @"You are DXO Reviewer. Critique the draft for correctness, clarity, completeness, and rubric adherence. Provide actionable revisions and a checklist.";
+
+    private const string CreatorProtocolPrompt = @"PROTOCOL ENFORCEMENT:
+When you have incorporated all feedback and the content is ready for publication (after all reviewers have explicitly signed off), you MUST output the token 'FINAL:' on its own line, followed immediately by the final complete content. Do not output 'FINAL:' until all reviewers have approved.";
+
+    private const string ReviewerProtocolPrompt = @"PROTOCOL ENFORCEMENT:
+If and only if the draft is publication-ready and meets all your criteria with no further changes needed, you MUST include the token '@@SIGNED OFF@@' on its own line at the end of your response. Do not sign off if there are any outstanding issues.";
 
     private const string SafetyPrompt = @"Do not request or reveal secrets (API keys, credentials). Avoid personal data; do not invent factual claims without evidence. If requirements are unclear, ask clarifying questions or state assumptions explicitly.";
 
@@ -599,6 +605,7 @@ public class OrchestrationService : IOrchestrationService
         var messages = new List<ChatMessageDto>
         {
             ChatMessageDto.System(config.RootPrompt),
+            ChatMessageDto.System(CreatorProtocolPrompt),
             ChatMessageDto.System(SafetyPrompt)
         };
 
@@ -652,11 +659,21 @@ public class OrchestrationService : IOrchestrationService
         }
         else
         {
-            var reviewerCount = reviewers.Count;
-            var feedbackInstruction = reviewerCount == 1 
-                ? "Please revise your draft incorporating feedback from the reviewer above."
-                : $"Please revise your draft incorporating feedback from all {reviewerCount} reviewers above.";
-            messages.Add(ChatMessageDto.User(feedbackInstruction));
+            // Check if we are in the "final iteration" phase (all reviewers signed off previously)
+            _sessionNeedsFinalIteration.TryGetValue(session.SessionId, out bool needsFinalIteration);
+
+            if (needsFinalIteration)
+            {
+                messages.Add(ChatMessageDto.User("All reviewers have signed off. Please output the final content starting with 'FINAL:', exactly as requested in your system prompt. Do not add any new content or changes unless critically necessary."));
+            }
+            else
+            {
+                var reviewerCount = reviewers.Count;
+                var feedbackInstruction = reviewerCount == 1 
+                    ? "Please revise your draft incorporating feedback from the reviewer above, and any User Feedback provided."
+                    : $"Please revise your draft incorporating feedback from all {reviewerCount} reviewers above, and any User Feedback provided.";
+                messages.Add(ChatMessageDto.User(feedbackInstruction));
+            }
         }
 
         return messages;
@@ -668,6 +685,7 @@ public class OrchestrationService : IOrchestrationService
         {
             ChatMessageDto.System(reviewer.RootPrompt),
             ChatMessageDto.System($"You are DXO {reviewer.Name}. " + ReviewerSystemPrompt),
+            ChatMessageDto.System(ReviewerProtocolPrompt),
             ChatMessageDto.System(SafetyPrompt)
         };
 
@@ -757,8 +775,7 @@ Authoring rules:
 3) Do not invent facts, benchmarks, citations, or references. If real data is missing, explicitly label content as an assumption or a placeholder (e.g., ""TBD: measured latency"").
 4) Include diagrams/tables as placeholders when helpful (e.g., ""Figure 1: Architecture diagram (TBD)"").
 5) Maintain internal consistency: terminology, acronyms, units, and claims must align across sections.
-6) Incorporate feedback from ALL reviewers explicitly: address each point and improve the draft accordingly.
-7) When the content is ready for publication (after ALL reviewers send @@SIGNED OFF@@ in their reviews), output: FINAL: followed by the complete final content.";
+6) Incorporate feedback from ALL reviewers explicitly: address each point and improve the draft accordingly.";
     }
 
     private static string GetDefaultReviewerPrompt(int reviewerNumber)
@@ -775,9 +792,7 @@ Output format:
 1) Summary verdict (1 paragraph)
 2) Major issues (bulleted, each with rationale + concrete fix)
 3) Minor issues (bulleted)
-4) Checklist (pass/fail items)
-
-If and only if the draft is publication-ready from your perspective, include the token @@SIGNED OFF@@ on its own line at the end.";
+4) Checklist (pass/fail items)";
     }
 
     public async Task IterateWithFeedbackAsync(
@@ -906,6 +921,9 @@ If and only if the draft is publication-ready from your perspective, include the
         
         session.UpdatedAt = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Ensure we clear the "needs final iteration" flag so we don't immediately prompt for FINAL content
+        _sessionNeedsFinalIteration.TryRemove(sessionId, out _);
 
         _logger.LogInformation(
             "Session {SessionId} reset for feedback iteration. Current iteration: {Current}, New max: {Max}",

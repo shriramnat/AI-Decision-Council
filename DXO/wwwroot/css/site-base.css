@@ -1066,6 +1066,30 @@ a:active {
     align-items: center;
 }
 
+.feedback-constraints {
+    margin-top: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: #f8fafc;
+    overflow: hidden;
+}
+
+.feedback-constraints .collapsible-header {
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid transparent;
+}
+
+.feedback-constraints:not(.collapsed) .collapsible-header {
+    border-bottom-color: var(--border-color);
+}
+
+.feedback-constraints h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
 .status-item {
     display: flex;
     align-items: center;
