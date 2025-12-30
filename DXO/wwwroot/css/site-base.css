@@ -599,6 +599,16 @@ a:active {
     color: var(--text-tertiary);
 }
 
+.feedback-input-section {
+    margin-top: 1rem;
+}
+
+.feedback-input-section textarea {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 1rem;
+}
+
 /* Action Buttons Section */
 .action-section {
     display: flex;
@@ -769,6 +779,10 @@ a:active {
     max-height: 0;
     padding-top: 0;
     padding-bottom: 0;
+}
+
+.output-preview {
+    padding-left: 2rem;
 }
 
 /* Agent Configurations Panel */
@@ -1250,7 +1264,7 @@ a:active {
 }
 
 .output-content {
-    padding: 1rem;
+    padding-left: 2rem;
 }
 
 .output-content textarea {

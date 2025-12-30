@@ -1,216 +1,209 @@
-/* DXO - Bright Aurora Theme (Light, Modern) */
+/* DXO - Neo-Future Light Theme */
+/* A stunning, bright, and futuristic aesthetic with vibrant gradients and deep soft shadows */
 
 :root {
-    --primary-color: #1e6bff;
-    --primary-hover: #0f5adf;
-    --secondary-color: #61788a;
-    --success-color: #0ea35c;
+    /* --- Modern Palette --- */
+    /* Primary: Electric Violet to Blue Gradient */
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+    --primary-color: #6366f1;
+    /* Fallback/Solid */
+    --primary-hover: #4f46e5;
+
+    /* Functional Colors */
+    --success-color: #10b981;
+    --success-bg: #ecfdf5;
     --warning-color: #f59e0b;
+    --warning-bg: #fffbeb;
     --danger-color: #ef4444;
-    --info-color: #2563eb;
+    --danger-bg: #fef2f2;
+    --info-color: #3b82f6;
+    --info-bg: #eff6ff;
 
-    --bg-color: #f7f8fb;
-    --bg-gradient: linear-gradient(180deg, #f9fafb 0%, #f4f6f8 50%, #eef1f5 100%);
+    /* Backgrounds */
+    /* Subtle cool-white gradient for main bg to avoid flat dullness */
+    --bg-color: #f8fafc;
+    --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
     --bg-secondary: #ffffff;
-    --bg-tertiary: #eef1f5;
+    --bg-tertiary: #f1f5f9;
 
-    --glass-bg: rgba(255, 255, 255, 0.96);
-    --glass-border: rgba(30, 107, 255, 0.12);
-    --glass-shadow: 0 12px 50px rgba(15, 23, 42, 0.12);
-    --glass-blur: blur(12px);
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-blur: blur(20px);
+    --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
 
+    /* Typography / Contrast */
     --text-color: #0f172a;
-    --text-secondary: #334155;
-    --text-tertiary: #64748b;
+    /* Slate 900 */
+    --text-secondary: #475569;
+    /* Slate 600 */
+    --text-tertiary: #94a3b8;
+    /* Slate 400 */
     --border-color: #e2e8f0;
+    /* Slate 200 */
 
-    /* Persona palette (bright, distinct) */
-    --creator-color: #1e6bff;
-    --creator-bg: #eef4ff;
-    --creator-border: #bcd5ff;
+    /* --- Persona Palette (Neon/Pastel) --- */
+    /* Creator: Deep Midnight with Blue accent */
+    --creator-color: #0f172a;
+    --creator-bg: #f8fafc;
+    --creator-border: #e2e8f0;
+
+    /* Reviewers: Bright, distinct colors for avatars/badges */
     --reviewer1-color: #0ea5e9;
-    --reviewer1-bg: #e0f4ff;
-    --reviewer1-border: #9edcff;
+    /* Sky Blue */
+    --reviewer1-bg: #f0f9ff;
+    --reviewer1-border: #bae6fd;
+
     --reviewer2-color: #10b981;
-    --reviewer2-bg: #e2f7f0;
-    --reviewer2-border: #9ee9cb;
+    /* Emerald */
+    --reviewer2-bg: #ecfdf5;
+    --reviewer2-border: #6ee7b7;
+
     --reviewer3-color: #f59e0b;
-    --reviewer3-bg: #fff4de;
-    --reviewer3-border: #fbd39b;
-    --reviewer4-color: #a855f7;
-    --reviewer4-bg: #f5e8ff;
-    --reviewer4-border: #e1c3ff;
-    --reviewer5-color: #ef4444;
-    --reviewer5-bg: #ffe7e7;
-    --reviewer5-border: #f8b3b3;
+    /* Amber */
+    --reviewer3-bg: #fffbeb;
+    --reviewer3-border: #fcd34d;
 
-    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
-    --shadow-glow: 0 10px 30px rgba(30, 107, 255, 0.16);
-    
-    --radius: 12px;
-    --radius-lg: 20px;
-    --radius-xl: 28px;
-    
-    --transition-fast: 0.15s ease;
-    --transition-normal: 0.25s ease;
-    --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --reviewer4-color: #d946ef;
+    /* Fuchsia */
+    --reviewer4-bg: #fdf4ff;
+    --reviewer4-border: #f0abfc;
+
+    --reviewer5-color: #f43f5e;
+    /* Rose */
+    --reviewer5-bg: #fff1f2;
+    --reviewer5-border: #fda4af;
+
+    /* --- Effects --- */
+    /* "Float" Shadows - colored and diffuse */
+    --shadow-xs: 0 2px 4px rgba(148, 163, 184, 0.1);
+    --shadow: 0 10px 30px -4px rgba(148, 163, 184, 0.15);
+    --shadow-lg: 0 20px 40px -4px rgba(148, 163, 184, 0.2);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+    /* Primary glow */
+
+    --radius: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Header */
+body {
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text-color);
+}
+
+/* --- Header --- */
 .header {
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: var(--glass-shadow);
 }
 
-/* User Button */
-.user-button {
-    background: #f1f5f9;
+.logo {
+    background: var(--primary-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
-.user-button:hover {
-    background: #e5edff;
+/* --- Navigation --- */
+.nav-link {
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: var(--transition);
 }
 
-/* User Dropdown */
-.user-dropdown {
-    background: #ffffff;
+.nav-link:hover,
+.nav-link.active {
+    color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+    /* Tint */
+    border-radius: var(--radius);
 }
 
-/* Dropdown Item */
-.dropdown-item:hover {
-    background: rgba(30, 107, 255, 0.08);
-}
-
-/* Footer */
-.footer {
-    background: rgba(255, 255, 255, 0.85);
-}
-
-/* Topic Section */
-.topic-section {
-    background: #ffffff;
-    border: 1px solid #dbeafe;
-}
-
-.topic-header {
-    background: #000000 !important;
-}
-
-.topic-header h3 {
-    color: #ffffff !important;
-}
-
-.topic-body textarea {
-    background: #f8fafc;
-}
-
-.topic-body textarea:focus {
-    box-shadow: 0 0 0 4px rgba(30, 107, 255, 0.15);
-}
-
-/* Settings & Session Controls */
+/* --- Cards & Containers --- */
 .session-settings,
 .collapsible-section,
 .settings-card,
 .info-card,
 .output-panel,
 .trace-panel,
-.status-bar {
-    background: #ffffff;
+.status-bar,
+.flyout-panel,
+.lightbox-content,
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid #ffffff;
+    /* Subtle highlight */
 }
 
-.collapsible-header:hover {
-    background: #f8fbff;
+/* Hover lift effect for interactive cards */
+.settings-card:hover,
+.info-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
 }
 
-.setting-inline input[type="text"],
-.setting-inline input[type="number"],
-.setting-inline select {
-    background: #ffffff;
+/* Headers within Cards */
+.card-header,
+.collapsible-header,
+.flyout-header,
+.lightbox-header,
+.message-header,
+.topic-header {
+    border-bottom: 1px solid var(--border-color);
+    background: transparent;
 }
 
-/* Buttons */
-.btn {
-    box-shadow: 0 10px 20px rgba(30, 107, 255, 0.18);
-}
 
-.btn-primary {
-    background: #0f172a;
-    color: #ffffff;
-}
-
-.btn-primary:hover:not(:disabled) {
-    background: linear-gradient(120deg, #0f5adf, #0284c7);
-    transform: translateY(-1px);
-}
-
-.btn-secondary,
-.btn-info {
-    background: #ffffff;
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    box-shadow: none;
-}
-
-.btn-secondary:hover:not(:disabled),
-.btn-info:hover:not(:disabled) {
-    background: #f1f5f9;
-}
-
-.btn-success {
-    background: linear-gradient(120deg, #0ea35c, #10b981);
-    color: #ffffff;
-}
-
-.btn-warning {
-    background: var(--danger-color);
-    color: #ffffff;
-}
-
-.btn-danger {
-    background: linear-gradient(120deg, #ef4444, #f87171);
-    color: #ffffff;
-}
-
-/* Persona Cards */
+/* --- Persona Configuration Cards (Settings Page) --- */
 .persona-card {
     background: #ffffff;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    /* Ensure header color doesn't bleed */
 }
 
-.card-header {
-    background: #f8fbff;
+.persona-card .card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
 }
 
-/* Creator: black header */
+/* Creator: Dark/Midnight Header */
 .persona-card.creator {
-    border-color: #0f172a;
+    border-color: var(--creator-color);
 }
 
 .persona-card.creator .card-header {
-    background: #0f172a;
-    color: #ffffff;
+    background: var(--creator-color);
+    color: white;
 }
 
 .persona-card.creator .card-header h3,
 .persona-card.creator .reviewer-name-container {
-    color: #ffffff;
+    color: white;
 }
 
-/* Reviewers: solid headers, white text */
+/* Reviewers: Colored Headers */
 .persona-card.reviewer1 {
     border-color: var(--reviewer1-border);
 }
 
 .persona-card.reviewer1 .card-header {
     background: var(--reviewer1-color);
-    color: #ffffff;
-}
-
-.persona-card.reviewer1 .card-header h3,
-.persona-card.reviewer1 .reviewer-name-container {
-    color: #ffffff;
+    color: white;
 }
 
 .persona-card.reviewer2 {
@@ -219,12 +212,7 @@
 
 .persona-card.reviewer2 .card-header {
     background: var(--reviewer2-color);
-    color: #ffffff;
-}
-
-.persona-card.reviewer2 .card-header h3,
-.persona-card.reviewer2 .reviewer-name-container {
-    color: #ffffff;
+    color: white;
 }
 
 .persona-card.reviewer3 {
@@ -233,12 +221,7 @@
 
 .persona-card.reviewer3 .card-header {
     background: var(--reviewer3-color);
-    color: #ffffff;
-}
-
-.persona-card.reviewer3 .card-header h3,
-.persona-card.reviewer3 .reviewer-name-container {
-    color: #ffffff;
+    color: white;
 }
 
 .persona-card.reviewer4 {
@@ -247,12 +230,7 @@
 
 .persona-card.reviewer4 .card-header {
     background: var(--reviewer4-color);
-    color: #ffffff;
-}
-
-.persona-card.reviewer4 .card-header h3,
-.persona-card.reviewer4 .reviewer-name-container {
-    color: #ffffff;
+    color: white;
 }
 
 .persona-card.reviewer5 {
@@ -261,322 +239,273 @@
 
 .persona-card.reviewer5 .card-header {
     background: var(--reviewer5-color);
-    color: #ffffff;
+    color: white;
 }
 
-.persona-card.reviewer5 .card-header h3,
-.persona-card.reviewer5 .reviewer-name-container {
-    color: #ffffff;
+/* Force white text for titles in colored headers */
+.persona-card[class*="reviewer"] .card-header h3,
+.persona-card[class*="reviewer"] .reviewer-name-container {
+    color: white;
 }
 
+/* --- Input Contrast in Headers --- */
+/* When an input is inside a colored card header, adapt it */
+.card-header .reviewer-name-input,
+.card-header .model-select-header {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    /* distinct white text */
+}
+
+.card-header .reviewer-name-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.card-header .reviewer-name-input:hover,
+.card-header .model-select-header:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.card-header .reviewer-name-input:focus,
+.card-header .model-select-header:focus {
+    background: #ffffff;
+    color: var(--text-color);
+    /* Flip to dark text on white bg for readability when typing */
+    border-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+
+/* Fix dropdown options getting white text (invisible on white bg) */
+.card-header .model-select-header option {
+    background: #ffffff;
+    color: var(--text-color);
+}
+
+
+/* --- Buttons --- */
+.btn {
+    border-radius: var(--radius);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: var(--transition);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xs);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: #ffffff;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+/* Floating Action Buttons */
+.scroll-fab-btn {
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    box-shadow: 0 8px 16px rgba(99, 102, 241, 0.35);
+}
+
+.scroll-fab-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.45);
+}
+
+/* --- Inputs --- */
+input[type="text"],
+input[type="number"],
+textarea,
+select,
+.form-control,
 .reviewer-name-input {
     background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    color: var(--text-color);
+    transition: var(--transition);
 }
 
-.reviewer-name-input:hover {
-    background: #eef2f7;
-}
-
-.reviewer-name-input:focus {
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-}
-
-/* Reviewer name input when placed inside colored card headers */
-.card-header .reviewer-name-input {
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    color: #ffffff;
-}
-
-.card-header .reviewer-name-input:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.55);
-}
-
-.card-header .reviewer-name-input:focus {
-    background: rgba(255, 255, 255, 0.24);
-    border-color: #ffffff;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
-}
-
-/* Model selector in header */
-.card-header .model-select-header {
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    color: #ffffff;
-}
-
-.card-header .model-select-header:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.55);
-}
-
-.card-header .model-select-header:focus {
-    background: rgba(255, 255, 255, 0.24);
-    border-color: #ffffff;
-}
-
-.card-header .model-select-header option {
-    background: #1e1e1e;
-    color: #ffffff;
-}
-
-.model-select-header {
+input:focus,
+textarea:focus,
+select:focus,
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    /* Purple/Violet ring */
     background: #ffffff;
 }
 
-.model-select-header:focus {
-    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+/* --- Feedback Modal --- */
+#feedbackComments {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    resize: vertical;
 }
 
-.btn-add-reviewer:hover {
-    background: rgba(30, 107, 255, 0.08);
-}
-
-/* Card Body */
-.card-body textarea {
+.feedback-context-section .context-display {
     background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-top: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
-.card-body textarea:focus {
-    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-}
-
-.setting-group select,
-.setting-group input {
-    background: #ffffff;
-}
-
-.setting-group select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%231e6bff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-}
-
-.setting-group select option {
-    background: #ffffff;
-}
-
-.setting-group select:focus,
-.setting-group input:focus {
-    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-}
-
-.settings-grid {
-    background: #f8fbff;
+/* --- Personas & Messages --- */
+.keyword-highlight {
+    color: var(--primary-color);
+    font-weight: 700;
 }
 
 /* Message Cards */
 .message-card {
     background: #ffffff;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    border-radius: var(--radius);
+    border-left-width: 4px;
+    border-left-style: solid;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    transition: var(--transition);
 }
 
+.message-card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+/* Persona Specifics */
 .message-card.creator {
-    background: linear-gradient(120deg, rgba(30, 107, 255, 0.06), #ffffff);
-    border-left-color: #0f172a;
+    border-left-color: var(--creator-color);
 }
 
 .message-card.reviewer1 {
-    background: linear-gradient(120deg, rgba(14, 165, 233, 0.06), #ffffff);
     border-left-color: var(--reviewer1-color);
 }
 
 .message-card.reviewer2 {
-    background: linear-gradient(120deg, rgba(16, 185, 129, 0.06), #ffffff);
     border-left-color: var(--reviewer2-color);
 }
 
 .message-card.reviewer3 {
-    background: linear-gradient(120deg, rgba(245, 158, 11, 0.06), #ffffff);
     border-left-color: var(--reviewer3-color);
 }
 
 .message-card.reviewer4 {
-    background: linear-gradient(120deg, rgba(168, 85, 247, 0.06), #ffffff);
     border-left-color: var(--reviewer4-color);
 }
 
 .message-card.reviewer5 {
-    background: linear-gradient(120deg, rgba(239, 68, 68, 0.06), #ffffff);
     border-left-color: var(--reviewer5-color);
 }
 
-.message-card.system {
-    background: linear-gradient(120deg, rgba(100, 116, 139, 0.08), #ffffff);
-    border-left-color: var(--secondary-color);
+.message-card .message-header {
+    background: linear-gradient(to right, rgba(248, 250, 252, 0.5), transparent);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.message-header {
-    background: #f8fbff;
+/* Persona Chips */
+.reviewer-chip {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
-.message-card.creator .message-header {
-    background: #0f172a;
-    color: #ffffff;
+.reviewer-chip.creator {
+    background: var(--creator-bg);
+    color: var(--creator-color);
 }
 
-.message-card.reviewer1 .message-header {
-    background: var(--reviewer1-color);
-    color: #ffffff;
+.reviewer-chip.reviewer1 {
+    background: var(--reviewer1-bg);
+    color: var(--reviewer1-color);
 }
 
-.message-card.reviewer2 .message-header {
-    background: var(--reviewer2-color);
-    color: #ffffff;
+.reviewer-chip.reviewer2 {
+    background: var(--reviewer2-bg);
+    color: var(--reviewer2-color);
 }
 
-.message-card.reviewer3 .message-header {
-    background: var(--reviewer3-color);
-    color: #ffffff;
+/* --- Topic Section --- */
+.topic-section {
+    border-radius: var(--radius-lg);
+    border: 1px solid #dbeafe;
+    /* Very subtle blue border */
+    overflow: hidden;
 }
 
-.message-card.reviewer4 .message-header {
-    background: var(--reviewer4-color);
-    color: #ffffff;
+.topic-header h3 {
+    color: white !important;
+    /* Force white on the dark header */
 }
 
-.message-card.reviewer5 .message-header {
-    background: var(--reviewer5-color);
-    color: #ffffff;
+.topic-header {
+    background: #0f172a !important;
+    /* Keep dark header for contrast as requested in old theme, but cleaner */
 }
 
-.message-card.creator .message-persona,
-.message-card.reviewer1 .message-persona,
-.message-card.reviewer2 .message-persona,
-.message-card.reviewer3 .message-persona,
-.message-card.reviewer4 .message-persona,
-.message-card.reviewer5 .message-persona {
-    color: #ffffff;
+/* --- Misc --- */
+.dropdown-item:hover {
+    background: var(--info-bg);
+    color: var(--primary-color);
 }
 
-.iteration-header {
-    background: #f8fbff;
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-/* Output Panel */
-.output-content textarea {
-    background: #f8fafc;
-}
-
-/* Flyouts */
-.flyout-overlay {
-    background: rgba(255, 255, 255, 0.65);
-}
-
-.flyout-panel {
-    background: #ffffff;
-    box-shadow: -12px 0 40px rgba(15, 23, 42, 0.15);
-}
-
-.flyout-header {
-    background: #f8fbff;
-}
-
-.flyout-body {
-    background: #ffffff;
-}
-
-.flyout-close:hover {
-    background: #e8eef7;
-}
-
-/* Reviewer Template Cards */
-.reviewer-template-card {
-    background: #ffffff;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-}
-
-.reviewer-template-card:hover {
-    box-shadow: 0 12px 30px rgba(30, 107, 255, 0.16);
-}
-
-.reviewer-template-card.disabled {
-    background: #f1f5f9;
-}
-
-.reviewer-template-card.disabled:hover {
-    box-shadow: none;
-}
-
-/* Modal */
-.modal {
-    background: rgba(15, 23, 42, 0.5);
-}
-
-.modal-content {
-    background: #ffffff;
-}
-
-/* Scrollbar */
 ::-webkit-scrollbar-thumb {
-    background: rgba(30, 107, 255, 0.3);
+    background: #cbd5e1;
+    border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(30, 107, 255, 0.5);
+    background: #94a3b8;
 }
 
-/* Floating Action Buttons */
-.scroll-fab-btn {
-    background: linear-gradient(135deg, #1e6bff, #0ea5e9);
-    color: #ffffff;
-    box-shadow: 0 14px 30px rgba(30, 107, 255, 0.28);
+::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-.scroll-fab-btn:hover {
-    background: linear-gradient(135deg, #0f5adf, #0284c7);
-}
+/* Mobile Tweaks */
+@media (max-width: 768px) {
+    :root {
+        --radius-lg: 16px;
+    }
 
-.scroll-fab-btn.secondary {
-    background: linear-gradient(135deg, #0ea5e9, #22c55e);
-    color: #ffffff;
-}
-
-/* Toast */
-.toast {
-    background: #ffffff;
-    color: var(--text-color);
-}
-
-/* Settings Page */
-.settings-card .card-header {
-    background: #f8fbff;
-}
-
-.settings-card .card-header h2 {
-    color: var(--text-color);
-}
-
-.form-control {
-    background: #f8fafc;
-}
-
-.form-control:focus {
-    box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-}
-
-.alert-success {
-    background: rgba(14, 163, 92, 0.1);
-}
-
-.alert-error {
-    background: rgba(239, 68, 68, 0.1);
-}
-
-/* Lightbox */
-.lightbox-overlay {
-    background: rgba(255, 255, 255, 0.78);
-}
-
-.lightbox-content {
-    background: #ffffff;
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
-}
-
-.lightbox-header {
-    background: #f8fbff;
-}
-
-.lightbox-close:hover {
-    background: #e8eef7;
+    .header {
+        padding: 0.5rem 1rem;
+    }
 }

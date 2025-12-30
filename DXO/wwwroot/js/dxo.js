@@ -1445,7 +1445,13 @@ Authoring rules:
         // Populate context
         const topic = document.getElementById('sessionTopic').value;
         document.getElementById('feedbackContextTopic').textContent = topic;
-        document.getElementById('feedbackContextOutput').textContent = finalOutput;
+
+        const outputEl = document.getElementById('feedbackContextOutput');
+        if (typeof marked !== 'undefined') {
+            outputEl.innerHTML = marked.parse(finalOutput);
+        } else {
+            outputEl.textContent = finalOutput;
+        }
 
         // Reset form
         document.getElementById('feedbackComments').value = '';
