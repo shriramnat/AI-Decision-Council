@@ -27,6 +27,7 @@ public interface IOrchestrationService
     void CancelSession(Guid sessionId);
     Task<List<FeedbackRound>> GetFeedbackRoundsAsync(Guid sessionId, CancellationToken cancellationToken = default);
     Task SubmitUserFeedbackAsync(Guid sessionId, int iteration, string feedback, CancellationToken cancellationToken = default);
+    Task IterateWithFeedbackAsync(Guid sessionId, string comments, string? tone, string? length, string? audience, int maxAdditionalIterations, CancellationToken cancellationToken = default);
 }
 
 public class OrchestrationService : IOrchestrationService
@@ -420,6 +421,19 @@ public class OrchestrationService : IOrchestrationService
             session.Status = SessionStatus.Completed;
             session.StopReason = StopReason.FinalMarkerDetected;
             session.FinalContent = ExtractFinalContent(creatorContent, session.StopMarker);
+            
+            // Create a final feedback round record so user can leave feedback on the final output
+            var finalFeedbackRound = new FeedbackRound
+            {
+                SessionId = session.SessionId,
+                Iteration = session.CurrentIteration,
+                DraftContent = session.FinalContent,
+                AllReviewersApproved = true,
+                ReviewerFeedbackJson = "[]", // No reviewer feedback for final output
+                CreatedAt = DateTime.UtcNow
+            };
+            dbContext.FeedbackRounds.Add(finalFeedbackRound);
+
             session.UpdatedAt = DateTime.UtcNow;
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -607,6 +621,11 @@ public class OrchestrationService : IOrchestrationService
             {
                 messages.Add(ChatMessageDto.Assistant(msg.Content));
             }
+            else if (msg.Persona == Persona.System && msg.Role == MessageRole.System)
+            {
+                // System messages (e.g., user feedback instructions)
+                messages.Add(ChatMessageDto.System(msg.Content));
+            }
             else if (!string.IsNullOrEmpty(msg.ReviewerId))
             {
                 // Dynamic reviewer feedback
@@ -658,19 +677,30 @@ public class OrchestrationService : IOrchestrationService
             messages.Add(ChatMessageDto.System($"=== CENTRAL DISCUSSION TOPIC ===\nThe following is the central topic that the content should address. Use this to evaluate whether the draft adequately covers the intended topic:\n\n{session.Topic}\n\n=== END TOPIC ==="));
         }
 
-        // Add recent context of this reviewer's previous reviews
+        // Add recent context: This reviewer's previous reviews AND global System messages (User Feedback)
+        // We need to fetch them chronologically
         var recentMessages = session.Messages
-            .Where(m => m.ReviewerId == reviewer.Id)
+            .Where(m => m.ReviewerId == reviewer.Id || (m.Persona == Persona.System && m.Role == MessageRole.System))
             .OrderByDescending(m => m.CreatedAt)
-            .Take(_options.Orchestration.ContextTurnsToSend / 2)
+            .Take(_options.Orchestration.ContextTurnsToSend) // Increase context window slightly if needed, or rely on existing limit
             .OrderBy(m => m.CreatedAt)
             .ToList();
 
         foreach (var msg in recentMessages)
         {
-            messages.Add(ChatMessageDto.Assistant(msg.Content));
+            if (msg.Persona == Persona.System && msg.Role == MessageRole.System)
+            {
+                // This is User Feedback / System Instruction
+                messages.Add(ChatMessageDto.System(msg.Content));
+            }
+            else
+            {
+                // This is the reviewer's own previous output
+                messages.Add(ChatMessageDto.Assistant(msg.Content));
+            }
         }
 
+        // Finally, add the draft to be reviewed
         messages.Add(ChatMessageDto.User($"Please review the following draft:\n\n{latestDraft}"));
 
         return messages;
@@ -749,6 +779,168 @@ Output format:
 
 If and only if the draft is publication-ready from your perspective, include the token @@SIGNED OFF@@ on its own line at the end.";
     }
+
+    public async Task IterateWithFeedbackAsync(
+        Guid sessionId,
+        string comments,
+        string? tone,
+        string? length,
+        string? audience,
+        int maxAdditionalIterations,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DxoDbContext>();
+
+        var session = await dbContext.Sessions
+            .Include(s => s.Messages)
+            .FirstOrDefaultAsync(s => s.SessionId == sessionId, cancellationToken);
+
+        if (session == null)
+        {
+            throw new InvalidOperationException($"Session {sessionId} not found");
+        }
+
+        if (session.Status != SessionStatus.Completed)
+        {
+            throw new InvalidOperationException($"Can only iterate with feedback on completed sessions. Current status: {session.Status}");
+        }
+
+        _logger.LogInformation("Starting feedback iteration for session {SessionId}", sessionId);
+
+        // Build feedback instruction with constraints
+        var feedbackInstruction = new System.Text.StringBuilder();
+        feedbackInstruction.AppendLine("=== USER FEEDBACK ===");
+        feedbackInstruction.AppendLine("The user has reviewed your output and provided the following feedback:");
+        feedbackInstruction.AppendLine();
+        feedbackInstruction.AppendLine(comments);
+        feedbackInstruction.AppendLine();
+
+        if (!string.IsNullOrEmpty(tone))
+        {
+            var toneInstruction = tone.ToLower() switch
+            {
+                "more-executive" => "Adjust the tone to be more executive-friendly: use concise language, focus on business impact, and minimize technical jargon.",
+                "more-technical" => "Adjust the tone to be more technical: include technical details, use domain-specific terminology, and provide implementation specifics.",
+                "more-casual" => "Adjust the tone to be more casual: use conversational language, avoid overly formal phrasing, and make it more accessible.",
+                "more-formal" => "Adjust the tone to be more formal: use professional language, structured phrasing, and maintain a scholarly tone.",
+                _ => null
+            };
+            if (toneInstruction != null)
+            {
+                feedbackInstruction.AppendLine($"TONE ADJUSTMENT: {toneInstruction}");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(length))
+        {
+            var lengthInstruction = length.ToLower() switch
+            {
+                "shorter" => "Make the content shorter and more concise. Remove redundant sections and focus on key points.",
+                "expand" => "Expand the content with more detail, examples, and depth. Add more comprehensive coverage of the topic.",
+                _ => null
+            };
+            if (lengthInstruction != null)
+            {
+                feedbackInstruction.AppendLine($"LENGTH ADJUSTMENT: {lengthInstruction}");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(audience))
+        {
+            var audienceInstruction = audience.ToLower() switch
+            {
+                "leadership" => "Tailor the content for leadership/executive audience: focus on strategic value, business outcomes, and high-level architecture.",
+                "engineers" => "Tailor the content for engineering audience: include technical implementation details, code considerations, and architectural patterns.",
+                "general" => "Tailor the content for general audience: balance technical accuracy with accessibility, explain concepts clearly.",
+                "experts" => "Tailor the content for domain experts: assume advanced knowledge, use specialized terminology, and provide deep technical insights.",
+                _ => null
+            };
+            if (audienceInstruction != null)
+            {
+                feedbackInstruction.AppendLine($"AUDIENCE ADJUSTMENT: {audienceInstruction}");
+            }
+        }
+
+        feedbackInstruction.AppendLine();
+        feedbackInstruction.AppendLine("Please revise the output to address all feedback points while preserving the quality of unaffected sections.");
+        feedbackInstruction.AppendLine("=== END USER FEEDBACK ===");
+
+        // Store the current output as baseline
+        var currentOutput = session.FinalContent ?? string.Empty;
+
+        // Persist the user feedback to the current (last completed) feedback round
+        var lastFeedbackRound = await dbContext.FeedbackRounds
+            .Where(fr => fr.SessionId == sessionId && fr.Iteration == session.CurrentIteration)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (lastFeedbackRound != null)
+        {
+            lastFeedbackRound.UserFeedback = comments;
+            lastFeedbackRound.UserFeedbackAt = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // Add a system message to the session context with the feedback
+        var feedbackMessage = new Message
+        {
+            MessageId = Guid.NewGuid(),
+            SessionId = sessionId,
+            Persona = Persona.System,
+            Role = MessageRole.System,
+            Content = feedbackInstruction.ToString(),
+            Iteration = session.CurrentIteration,
+            ModelUsed = "system"
+        };
+
+        dbContext.Messages.Add(feedbackMessage);
+
+        // Reset session state for re-iteration
+        session.Status = SessionStatus.Running;
+        session.StopReason = StopReason.MaxIterationsReached; // Temporary value, will be updated when session completes
+        session.FinalContent = null;
+        
+        // Increase max iterations by the specified amount (but don't go below current iteration)
+        var newMaxIterations = Math.Max(session.MaxIterations, session.CurrentIteration) + maxAdditionalIterations;
+        session.MaxIterations = newMaxIterations;
+        
+        session.UpdatedAt = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Session {SessionId} reset for feedback iteration. Current iteration: {Current}, New max: {Max}",
+            sessionId, session.CurrentIteration, newMaxIterations);
+
+        // Start the session orchestration loop again
+        var cts = new CancellationTokenSource();
+        _sessionCancellations[sessionId] = cts;
+
+        // Run orchestration in background
+        _ = Task.Run(async () =>
+        {
+            using var backgroundScope = _scopeFactory.CreateScope();
+            
+            try
+            {
+                await RunOrchestrationLoopAsync(sessionId, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Feedback iteration for session {SessionId} was cancelled", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error running feedback iteration for session {SessionId}", sessionId);
+                var backgroundDbContext = backgroundScope.ServiceProvider.GetRequiredService<DxoDbContext>();
+                await UpdateSessionStatusAsync(backgroundDbContext, sessionId, SessionStatus.Error, StopReason.Error);
+                await _hubContext.Clients.Group(sessionId.ToString()).SessionError(sessionId, ex.Message);
+            }
+            finally
+            {
+                _sessionCancellations.TryRemove(sessionId, out _);
+            }
+        }, cancellationToken);
+    }
 }
 
 #region Request Models
@@ -795,15 +987,6 @@ public class ReviewerRequest
     public double? TopP { get; set; }
     public double? PresencePenalty { get; set; }
     public double? FrequencyPenalty { get; set; }
-}
-
-/// <summary>
-/// Request model for submitting user feedback on a feedback round
-/// </summary>
-public class SubmitFeedbackRequest
-{
-    public int Iteration { get; set; }
-    public string Feedback { get; set; } = string.Empty;
 }
 
 #endregion

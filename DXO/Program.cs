@@ -453,7 +453,7 @@ app.MapGet("/api/session/{id:guid}/feedback-rounds", async (Guid id, IOrchestrat
     return Results.Ok(feedbackRounds);
 });
 
-app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, SubmitFeedbackRequest? request, IOrchestrationService orchestration, CancellationToken ct) =>
+app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, DXO.Models.SubmitFeedbackRequest? request, IOrchestrationService orchestration, CancellationToken ct) =>
 {
     if (request == null)
     {
@@ -478,6 +478,79 @@ app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, SubmitFeedbackReq
     catch (InvalidOperationException ex)
     {
         return Results.NotFound(new { error = ex.Message });
+    }
+});
+
+app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, IterateWithFeedbackRequest? request, IOrchestrationService orchestration, IOpenAIService openAIService, CancellationToken ct) =>
+{
+    if (request == null)
+    {
+        return Results.BadRequest(new { error = "Request body is required" });
+    }
+    
+    if (string.IsNullOrWhiteSpace(request.Comments))
+    {
+        return Results.BadRequest(new { error = "Feedback comments cannot be empty" });
+    }
+    
+    try
+    {
+        var session = await orchestration.GetSessionAsync(id, ct);
+        if (session == null)
+            return Results.NotFound(new { error = "Session not found" });
+
+        // Validate session is in completed state
+        if (session.Status != SessionStatus.Completed)
+        {
+            return Results.BadRequest(new { error = "Can only iterate on completed sessions" });
+        }
+
+        // Collect distinct models used by this session
+        var models = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var creator = JsonSerializer.Deserialize<PersonaConfig>(session.CreatorConfigJson);
+            if (!string.IsNullOrWhiteSpace(creator?.Model))
+                models.Add(creator.Model);
+
+            var reviewers = JsonSerializer.Deserialize<List<ReviewerConfig>>(session.ReviewersConfigJson) ?? new List<ReviewerConfig>();
+            foreach (var r in reviewers)
+            {
+                if (!string.IsNullOrWhiteSpace(r.Model))
+                    models.Add(r.Model);
+            }
+        }
+        catch (JsonException ex)
+        {
+            return Results.BadRequest(new { error = $"Unable to parse session configuration: {ex.Message}" });
+        }
+
+        // Validate API keys for used models
+        var missing = models.Where(m => !openAIService.HasApiKey(m)).ToList();
+        if (missing.Any())
+        {
+            return Results.BadRequest(new
+            {
+                error = $"Missing API key(s) for models: {string.Join(", ", missing)}. Please configure corresponding API key(s) in Settings."
+            });
+        }
+
+        // Process the feedback iteration request
+        await orchestration.IterateWithFeedbackAsync(
+            id,
+            request.Comments,
+            request.Tone,
+            request.Length,
+            request.Audience,
+            request.MaxAdditionalIterations,
+            ct
+        );
+
+        return Results.Ok(new { success = true });
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
     }
 });
 

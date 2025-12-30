@@ -1,9 +1,9 @@
 /* DXO - Base Structural Styles (Theme-agnostic) */
 
-/* Hubot Sans Font from GitHub */
+/* Hubot Sans Font (Locally Hosted) */
 @font-face {
     font-family: 'Hubot Sans';
-    src: url('https://github.com/github/hubot-sans/raw/main/fonts/webfonts/Hubot-Sans.woff2') format('woff2');
+    src: url('fonts/HubotSans-Regular.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -11,7 +11,7 @@
 
 @font-face {
     font-family: 'Hubot Sans';
-    src: url('https://github.com/github/hubot-sans/raw/main/fonts/webfonts/Hubot-Sans-Bold.woff2') format('woff2');
+    src: url('fonts/HubotSans-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
     font-display: swap;
@@ -19,7 +19,7 @@
 
 @font-face {
     font-family: 'Hubot Sans';
-    src: url('https://github.com/github/hubot-sans/raw/main/fonts/webfonts/Hubot-Sans-Medium.woff2') format('woff2');
+    src: url('fonts/HubotSans-Medium.woff2') format('woff2');
     font-weight: 500;
     font-style: normal;
     font-display: swap;
@@ -27,7 +27,7 @@
 
 @font-face {
     font-family: 'Hubot Sans';
-    src: url('https://github.com/github/hubot-sans/raw/main/fonts/webfonts/Hubot-Sans-Light.woff2') format('woff2');
+    src: url('fonts/HubotSans-Light.woff2') format('woff2');
     font-weight: 300;
     font-style: normal;
     font-display: swap;
@@ -37,6 +37,14 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+/* Ensure form elements inherit the global font */
+input,
+textarea,
+select,
+button {
+    font-family: inherit;
 }
 
 html {
@@ -185,6 +193,7 @@ a:active {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -345,6 +354,7 @@ a:active {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -1061,12 +1071,29 @@ a:active {
     font-size: 0.8125rem;
 }
 
-.status-created { color: var(--text-secondary); }
-.status-running { color: var(--success-color); }
-.status-paused { color: var(--warning-color); }
-.status-completed { color: var(--info-color); }
-.status-stopped { color: var(--danger-color); }
-.status-error { color: var(--danger-color); }
+.status-created {
+    color: var(--text-secondary);
+}
+
+.status-running {
+    color: var(--success-color);
+}
+
+.status-paused {
+    color: var(--warning-color);
+}
+
+.status-completed {
+    color: var(--info-color);
+}
+
+.status-stopped {
+    color: var(--danger-color);
+}
+
+.status-error {
+    color: var(--danger-color);
+}
 
 /* Trace Panel */
 .trace-panel {
@@ -1102,7 +1129,7 @@ a:active {
     max-height: none !important;
 }
 
-.trace-panel .collapsible-content > .trace-content > * {
+.trace-panel .collapsible-content>.trace-content>* {
     max-height: none !important;
 }
 
@@ -1319,8 +1346,17 @@ a:active {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
 }
 
 /* Custom Scrollbar */
@@ -1377,6 +1413,7 @@ a:active {
         bottom: 1rem;
         gap: 0.35rem;
     }
+
     .scroll-fab-btn {
         width: 40px;
         height: 40px;
@@ -1427,6 +1464,7 @@ a:active {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -1603,6 +1641,7 @@ a:active {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -1626,6 +1665,7 @@ a:active {
         transform: scale(0.95);
         opacity: 0;
     }
+
     to {
         transform: scale(1);
         opacity: 1;
@@ -1697,30 +1737,30 @@ a:active {
     .persona-cards {
         grid-template-columns: 1fr;
     }
-    
+
     .session-settings {
         flex-direction: column;
         gap: 0.75rem;
     }
-    
+
     .action-section {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .action-section .btn {
         width: 100%;
     }
-    
+
     .status-bar {
         flex-direction: column;
         gap: 0.5rem;
     }
-    
+
     .header-content {
         flex-wrap: wrap;
     }
-    
+
     .tagline {
         display: none;
     }

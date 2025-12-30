@@ -25,3 +25,24 @@ public record UpdateModelRequest
     public bool IsAzureModel { get; init; }
     public string? DisplayName { get; init; }
 }
+
+/// <summary>
+/// Request to submit user feedback for a specific iteration
+/// </summary>
+public record SubmitFeedbackRequest
+{
+    public int Iteration { get; init; }
+    public string Feedback { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// Request to iterate with feedback after session completion
+/// </summary>
+public record IterateWithFeedbackRequest
+{
+    public string Comments { get; init; } = string.Empty;
+    public string? Tone { get; init; }
+    public string? Length { get; init; }
+    public string? Audience { get; init; }
+    public int MaxAdditionalIterations { get; init; } = 1;
+}

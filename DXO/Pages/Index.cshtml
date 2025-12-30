@@ -81,7 +81,8 @@
                         </div>
                     </div>
                 </div>
-
+<div><br /><bold>Configure your reviewers here:</bold></div>
+<br />
                 <!-- Dynamic Reviewer Cards Container -->
                 <div id="reviewerCardsContainer">
                     <!-- Reviewer cards will be dynamically added here -->
@@ -144,18 +145,34 @@
 </section>
 <br />
 <!-- Final Output Panel -->
-<section class="output-panel">
-    <div class="panel-header">
-        <h2>📜 The Council's recommendation</h2>
-        <div class="output-controls">
-            <button id="btnCopyOutput" class="btn btn-small btn-secondary">📋 Copy</button>
-            <button id="btnDownloadMd" class="btn btn-small btn-secondary">⬇ MD</button>
-            <button id="btnDownloadTxt" class="btn btn-small btn-secondary">⬇ TXT</button>
+<section class="output-panel collapsible-section" id="finalOutputSection">
+    <div class="collapsible-header" onclick="toggleSection('finalOutputSection')">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h2>📜 The Council's recommendation</h2>
+        </div>
+        <div class="collapsible-chevron">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
         </div>
     </div>
-    <div class="output-content">
-        <textarea id="finalOutput" readonly
-            placeholder="Final output will appear here when the Creator finalizes the content or the session is stopped..."></textarea>
+    <div class="collapsible-content">
+        <div style="padding: 1rem 1.5rem 0; display: flex; justify-content: flex-end;">
+            <div class="output-controls">
+                <button id="btnIterateWithFeedback" class="btn btn-small btn-primary" style="display: none;">🔁 Iterate with Feedback</button>
+                <button id="btnCopyOutput" class="btn btn-small btn-secondary">📋 Copy</button>
+                <button id="btnDownloadMd" class="btn btn-small btn-secondary">⬇ MD</button>
+                <button id="btnDownloadTxt" class="btn btn-small btn-secondary">⬇ TXT</button>
+            </div>
+        </div>
+        <div class="output-content">
+             <!-- Rendered Markdown Container -->
+            <div id="finalOutputContainer" class="markdown-body" style="min-height: 200px; line-height: 1.6;">
+                <p class="text-muted" style="font-style: italic; color: var(--text-tertiary);">Final output will appear here when the Creator finalizes the content or the session is stopped...</p>
+            </div>
+            <!-- Hidden Raw Output for JS Logic -->
+            <textarea id="finalOutput" style="display: none;"></textarea>
+        </div>
     </div>
 </section>
 <br />
@@ -171,7 +188,7 @@
         </div>
     </div>
     <div class="collapsible-content">
-        <div id="feedbackRoundsList" class="feedback-rounds-list">
+        <div id="feedbackRoundsList" class="feedback-rounds-list" style="padding: 1em;">
             <div class="empty-state">
                 <p>No feedback rounds yet. Start a session to see iteration history.</p>
             </div>
@@ -179,6 +196,90 @@
     </div>
 </section>
 
+</div>
+
+<!-- Iterate with Feedback Modal -->
+<div id="feedbackModal" class="lightbox-overlay hidden">
+    <div class="lightbox-content feedback-modal-content">
+        <div class="lightbox-header">
+            <h2>🔁 Iterate with Feedback</h2>
+            <button class="lightbox-close" onclick="dxoApp.closeFeedbackModal()">&times;</button>
+        </div>
+        <div class="lightbox-body">
+            <div class="feedback-modal-body">
+                <!-- Context Section (Read-only) -->
+                <div class="feedback-context-section">
+                    <h3>Context</h3>
+                    <div class="context-item">
+                        <label>Original Topic:</label>
+                        <div id="feedbackContextTopic" class="context-display"></div>
+                    </div>
+                    <div class="context-item">
+                        <label>Current Final Output (v1):</label>
+                        <div id="feedbackContextOutput" class="context-display output-preview"></div>
+                    </div>
+                </div>
+
+                <!-- User Feedback Section -->
+                <div class="feedback-input-section">
+                    <h3>Your Feedback</h3>
+                    <label for="feedbackComments" class="required-label">What should change? <span class="required-asterisk">*</span></label>
+                    <textarea id="feedbackComments" rows="6" 
+                        placeholder="Describe what you'd like the Council to revise in the output. Be specific about what needs to change."></textarea>
+                    
+                    <!-- Optional Constraints -->
+                    <div class="feedback-constraints">
+                        <h4>Optional Constraints</h4>
+                        <div class="constraints-grid">
+                            <div class="constraint-group">
+                                <label for="feedbackTone">Tone:</label>
+                                <select id="feedbackTone" class="form-control">
+                                    <option value="">Same</option>
+                                    <option value="more-executive">More Executive</option>
+                                    <option value="more-technical">More Technical</option>
+                                    <option value="more-casual">More Casual</option>
+                                    <option value="more-formal">More Formal</option>
+                                </select>
+                            </div>
+                            <div class="constraint-group">
+                                <label for="feedbackLength">Length:</label>
+                                <select id="feedbackLength" class="form-control">
+                                    <option value="">Same</option>
+                                    <option value="shorter">Shorter</option>
+                                    <option value="expand">Expand</option>
+                                </select>
+                            </div>
+                            <div class="constraint-group">
+                                <label for="feedbackAudience">Audience:</label>
+                                <select id="feedbackAudience" class="form-control">
+                                    <option value="">Same</option>
+                                    <option value="leadership">Leadership</option>
+                                    <option value="engineers">Engineers</option>
+                                    <option value="general">General</option>
+                                    <option value="experts">Domain Experts</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Iteration Controls -->
+                    <div class="feedback-iteration-controls">
+                        <div class="constraint-group">
+                            <label for="feedbackMaxIterations">Max Additional Iterations:</label>
+                            <input type="number" id="feedbackMaxIterations" value="1" min="1" max="3" class="form-control" />
+                            <small class="form-text">Number of additional iterations to allow (1-3)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="feedback-modal-actions">
+                    <button id="btnSubmitFeedback" class="btn btn-primary">▶️ Re-run with Feedback</button>
+                    <button id="btnCancelFeedback" class="btn btn-secondary" onclick="dxoApp.closeFeedbackModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Session Settings Flyout -->

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace DXO.Models;
 
@@ -57,6 +58,7 @@ public class FeedbackRound
     /// Navigation property for the parent session
     /// </summary>
     [ForeignKey(nameof(SessionId))]
+    [JsonIgnore]
     public virtual Session? Session { get; set; }
 }
 

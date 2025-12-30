@@ -10,7 +10,7 @@ class DXOApp {
         this.currentStreamingMessage = null;
         this.reviewers = []; // Dynamic reviewers array
         this.reviewerCounter = 0; // Counter for generating unique IDs
-        
+
         this.init();
     }
 
@@ -41,7 +41,7 @@ class DXOApp {
     // Populate model dropdowns with available models
     populateModelDropdowns() {
         const creatorSelect = document.getElementById('creatorModel');
-        
+
         if (!this.config?.allowedModels) return;
 
         // Clear existing options first to prevent duplicates
@@ -54,10 +54,10 @@ class DXOApp {
         });
 
         creatorSelect.value = this.config.defaultModelCreator;
-        
+
         // Add change event listener to handle xAI model selection
         creatorSelect.addEventListener('change', () => this.handleCreatorModelChange());
-        
+
         // Initial state check
         this.handleCreatorModelChange();
     }
@@ -103,10 +103,10 @@ If and only if the draft is publication-ready from your perspective, include the
             if (!response.ok) {
                 throw new Error('Failed to load agent configurations');
             }
-            
+
             const config = await response.json();
             const customReviewer = config.agents?.reviewers?.find(r => r.agentId === 'CustomReviewer');
-            
+
             if (customReviewer && customReviewer.prompt) {
                 // Format the prompt by replacing \n with actual line breaks
                 const formattedPrompt = customReviewer.prompt.replace(/\\n/g, '\n');
@@ -143,7 +143,7 @@ If and only if the draft is publication-ready from your perspective, include the
         const template = document.getElementById('reviewerCardTemplate');
         const clone = template.content.cloneNode(true);
         const card = clone.querySelector('.persona-card');
-        
+
         card.dataset.reviewerId = reviewerId;
         card.querySelector('.reviewer-name-input').value = reviewerName;
         card.querySelector('.reviewer-prompt').value = reviewerPrompt;
@@ -280,10 +280,10 @@ If and only if the draft is publication-ready from your perspective, include the
             if (!response.ok) {
                 throw new Error('Failed to load agent configurations');
             }
-            
+
             const config = await response.json();
             const creatorConfig = config.agents?.creator;
-            
+
             if (creatorConfig && creatorConfig.prompt) {
                 // Format the prompt by replacing \n with actual line breaks
                 const formattedPrompt = creatorConfig.prompt.replace(/\\n/g, '\n');
@@ -338,7 +338,23 @@ Authoring rules:
             this.updateStatus('Completed');
             this.isRunning = false;
             this.updateButtonStates();
+            this.updateFeedbackButtonVisibility('Completed');
+
+            // Popuplated hidden textarea for copy/download/forms
             document.getElementById('finalOutput').value = finalContent;
+
+            // Render Markdown in the new container
+            const container = document.getElementById('finalOutputContainer');
+            if (container) {
+                if (typeof marked !== 'undefined') {
+                    container.innerHTML = marked.parse(finalContent);
+                } else {
+                    container.textContent = finalContent;
+                }
+                // Ensure text color is appropriate by removing any specific styling if needed, 
+                // though css class 'markdown-body' usually handles it.
+            }
+
             this.showToast(`Session completed: ${stopReason}`, 'success');
             this.loadFeedbackRounds(); // Load feedback rounds when session completes
         });
@@ -392,10 +408,10 @@ Authoring rules:
     setupEventListeners() {
         // Session Settings gear button
         document.getElementById('btnSessionSettings').addEventListener('click', () => this.openSessionSettings());
-        
+
         // View Interactions button
         document.getElementById('btnViewInteractions').addEventListener('click', () => this.openInteractionStream());
-        
+
         // Action buttons
         document.getElementById('btnStart').addEventListener('click', () => this.startSession());
         document.getElementById('btnStep').addEventListener('click', () => this.stepSession());
@@ -415,6 +431,10 @@ Authoring rules:
         document.getElementById('btnCopyOutput').addEventListener('click', () => this.copyOutput());
         document.getElementById('btnDownloadMd').addEventListener('click', () => this.downloadOutput('md'));
         document.getElementById('btnDownloadTxt').addEventListener('click', () => this.downloadOutput('txt'));
+
+        // Feedback button
+        document.getElementById('btnIterateWithFeedback').addEventListener('click', () => this.openFeedbackModal());
+        document.getElementById('btnSubmitFeedback').addEventListener('click', () => this.submitIterationFeedback());
 
         // Export modal buttons
         document.getElementById('btnExportJson').addEventListener('click', () => this.exportTranscript('json'));
@@ -529,11 +549,11 @@ Authoring rules:
     getReviewerConfigs() {
         const configs = [];
         const cards = document.querySelectorAll('#reviewerCardsContainer .persona-card');
-        
+
         cards.forEach(card => {
             const reviewerId = card.dataset.reviewerId;
             const reviewer = this.reviewers.find(r => r.id === reviewerId);
-            
+
             configs.push({
                 id: reviewerId,
                 name: card.querySelector('.reviewer-name-input').value,
@@ -546,14 +566,14 @@ Authoring rules:
                 frequencyPenalty: parseFloat(card.querySelector('.reviewer-frequency-penalty').value)
             });
         });
-        
+
         return configs;
     }
 
     // Create session and start
     async startSession() {
         const request = this.buildSessionRequest();
-        
+
         try {
             // Create session
             const response = await fetch('/api/session/create', {
@@ -664,7 +684,7 @@ Authoring rules:
         if (this.currentSessionId) {
             this.connection.invoke('LeaveSession', this.currentSessionId);
         }
-        
+
         this.currentSessionId = null;
         this.messages = [];
         this.isRunning = false;
@@ -703,7 +723,7 @@ Authoring rules:
             stopOnReviewerApproved: document.getElementById('stopOnApproved').checked,
             runMode: document.getElementById('runMode').value,
             topic: document.getElementById('sessionTopic').value,
-            
+
             creatorRootPrompt: document.getElementById('creatorPrompt').value,
             creatorModel: document.getElementById('creatorModel').value,
             creatorTemperature: parseFloat(document.getElementById('creatorTemp').value),
@@ -711,7 +731,7 @@ Authoring rules:
             creatorTopP: parseFloat(document.getElementById('creatorTopP').value),
             creatorPresencePenalty: parseFloat(document.getElementById('creatorPresencePenalty').value),
             creatorFrequencyPenalty: parseFloat(document.getElementById('creatorFrequencyPenalty').value),
-            
+
             // Dynamic reviewers
             reviewers: this.getReviewerConfigs()
         };
@@ -740,7 +760,7 @@ Authoring rules:
     // Add iteration header to trace
     addIterationHeader(iteration) {
         const traceViewer = document.getElementById('traceViewer');
-        
+
         // Remove empty state if present
         const emptyState = traceViewer.querySelector('.empty-state');
         if (emptyState) {
@@ -751,7 +771,7 @@ Authoring rules:
         header.className = 'iteration-header';
         header.textContent = `── Iteration ${iteration} ──`;
         traceViewer.appendChild(header);
-        
+
         this.scrollToBottom();
     }
 
@@ -761,20 +781,20 @@ Authoring rules:
         if (persona === 'Creator') {
             return { icon: '🎨', color: 'creator', name: 'Creator' };
         }
-        
+
         // Check if it's a dynamic reviewer ID
         const reviewer = this.reviewers.find(r => r.id === persona);
         if (reviewer) {
             const index = this.reviewers.indexOf(reviewer);
             const icons = ['🔍', '📝', '✅', '🎯', '💡'];
             const colors = ['reviewer1', 'reviewer2', 'reviewer3', 'reviewer4', 'reviewer5'];
-            return { 
-                icon: icons[index % icons.length], 
+            return {
+                icon: icons[index % icons.length],
                 color: colors[index % colors.length],
                 name: reviewer.name
             };
         }
-        
+
         return { icon: '💬', color: 'system', name: persona };
     }
 
@@ -782,11 +802,11 @@ Authoring rules:
     startStreamingMessage(messageId, persona, iteration) {
         const traceViewer = document.getElementById('traceViewer');
         const { icon, color, name } = this.getPersonaInfo(persona);
-        
+
         const card = document.createElement('div');
         card.className = `message-card ${color}`;
         card.id = `msg-${messageId}`;
-        
+
         card.innerHTML = `
             <div class="message-header">
                 <div class="message-meta">
@@ -804,7 +824,7 @@ Authoring rules:
             </div>
             <div class="message-content" id="content-${messageId}"></div>
         `;
-        
+
         traceViewer.appendChild(card);
         this.currentStreamingMessage = messageId;
         this.scrollToBottom();
@@ -815,7 +835,7 @@ Authoring rules:
         const contentEl = document.getElementById(`content-${messageId}`);
         if (contentEl) {
             contentEl.textContent += content;
-            
+
             if (document.getElementById('autoScroll').checked) {
                 this.scrollToBottom();
             }
@@ -831,13 +851,13 @@ Authoring rules:
             if (indicator) {
                 indicator.remove();
             }
-            
+
             // Update content with markdown rendering
             const contentEl = document.getElementById(`content-${messageId}`);
             if (contentEl) {
                 // Store raw content as data attribute
                 contentEl.dataset.rawContent = fullContent;
-                
+
                 // Try to render markdown
                 try {
                     if (typeof marked !== 'undefined') {
@@ -1024,7 +1044,7 @@ Authoring rules:
     async openReviewerSelector() {
         const flyout = document.getElementById('reviewerSelectionFlyout');
         flyout.classList.remove('hidden');
-        
+
         // Load templates every time the flyout opens
         await this.loadReviewerTemplates();
     }
@@ -1039,38 +1059,38 @@ Authoring rules:
     async loadReviewerTemplates() {
         const grid = document.getElementById('reviewerTemplatesGrid');
         grid.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Loading templates...</p>';
-        
+
         try {
             const response = await fetch('/agentconfigurations.json');
             if (!response.ok) {
                 throw new Error('Failed to load agent configurations');
             }
-            
+
             const config = await response.json();
             let reviewerTemplates = config.agents?.reviewers || [];
-            
+
             if (reviewerTemplates.length === 0) {
                 grid.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No reviewer templates found.</p>';
                 return;
             }
-            
+
             // Sort templates alphabetically by role
             reviewerTemplates = reviewerTemplates.sort((a, b) => {
                 return a.role.localeCompare(b.role);
             });
-            
+
             // Get currently added reviewer roles to determine which templates are already used
             const addedRoles = this.reviewers.map(r => r.name);
-            
+
             // Clear grid and populate with template cards
             grid.innerHTML = '';
-            
+
             reviewerTemplates.forEach(template => {
                 const isAdded = addedRoles.includes(template.role);
                 const card = this.createTemplateCard(template, isAdded);
                 grid.appendChild(card);
             });
-            
+
         } catch (error) {
             console.error('Failed to load reviewer templates:', error);
             grid.innerHTML = '<p style="color: var(--danger-color); text-align: center;">Failed to load templates. Please try again.</p>';
@@ -1083,19 +1103,19 @@ Authoring rules:
         const card = document.createElement('div');
         card.className = 'reviewer-template-card';
         card.dataset.templateRole = template.role;
-        
+
         // Add disabled class if already added
         if (isAdded) {
             card.classList.add('disabled');
         }
-        
+
         // Get category badge class
         const categoryClass = template.category.toLowerCase().replace('-', '-');
-        
+
         // Extract first line of prompt as description (if available)
         const promptLines = template.prompt.split('\\n');
         const description = promptLines.length > 1 ? promptLines[1].trim() : 'Click to add this reviewer';
-        
+
         card.innerHTML = `
             <div class="template-card-header">
                 <h4 class="template-card-title">${template.role}</h4>
@@ -1103,14 +1123,14 @@ Authoring rules:
             </div>
             <p class="template-card-description">${isAdded ? 'Already added' : description}</p>
         `;
-        
+
         // Add click handler only if not already added
         if (!isAdded) {
             card.addEventListener('click', () => {
                 this.selectReviewerTemplate(template);
             });
         }
-        
+
         return card;
     }
 
@@ -1118,14 +1138,14 @@ Authoring rules:
     selectReviewerTemplate(template) {
         // Format the prompt by replacing \n with actual line breaks
         const formattedPrompt = template.prompt.replace(/\\n/g, '\n');
-        
+
         // Add reviewer with template data
         const reviewerNumber = this.reviewers.length + 1;
         this.addReviewer(template.role, formattedPrompt);
-        
+
         // Close the flyout
         this.closeReviewerSelector();
-        
+
         // Show success message
         this.showToast(`Added ${template.role}`, 'success');
     }
@@ -1140,10 +1160,10 @@ Authoring rules:
     handleCreatorModelChange() {
         const modelSelect = document.getElementById('creatorModel');
         const isXAI = this.isXAIModel(modelSelect.value);
-        
+
         const presencePenalty = document.getElementById('creatorPresencePenalty');
         const frequencyPenalty = document.getElementById('creatorFrequencyPenalty');
-        
+
         if (isXAI) {
             presencePenalty.disabled = true;
             frequencyPenalty.disabled = true;
@@ -1167,13 +1187,13 @@ Authoring rules:
     handleReviewerModelChange(reviewerId) {
         const card = document.querySelector(`[data-reviewer-id="${reviewerId}"]`);
         if (!card) return;
-        
+
         const modelSelect = card.querySelector('.reviewer-model');
         const isXAI = this.isXAIModel(modelSelect.value);
-        
+
         const presencePenalty = card.querySelector('.reviewer-presence-penalty');
         const frequencyPenalty = card.querySelector('.reviewer-frequency-penalty');
-        
+
         if (isXAI) {
             presencePenalty.disabled = true;
             frequencyPenalty.disabled = true;
@@ -1199,6 +1219,8 @@ Authoring rules:
 
         try {
             const response = await fetch(`/api/session/${this.currentSessionId}/feedback-rounds`);
+            if (!response.ok) throw new Error('Failed response from API');
+
             const feedbackRounds = await response.json();
             this.displayFeedbackRounds(feedbackRounds);
         } catch (error) {
@@ -1210,7 +1232,7 @@ Authoring rules:
     // Display feedback rounds in the UI
     displayFeedbackRounds(feedbackRounds) {
         const container = document.getElementById('feedbackRoundsList');
-        
+
         if (!feedbackRounds || feedbackRounds.length === 0) {
             container.innerHTML = '<div class="empty-state"><p>No feedback rounds yet. Start a session to see iteration history.</p></div>';
             return;
@@ -1220,7 +1242,7 @@ Authoring rules:
         feedbackRounds.forEach(round => {
             const reviewerFeedback = round.reviewerFeedbackJson ? JSON.parse(round.reviewerFeedbackJson) : [];
             const approvedBadge = round.allReviewersApproved ? '<span class="badge badge-success">✓ All Approved</span>' : '';
-            
+
             html += `
                 <div class="feedback-round-card" data-iteration="${round.iteration}">
                     <div class="feedback-round-header">
@@ -1237,15 +1259,14 @@ Authoring rules:
                             <h5>Reviewer Feedback:</h5>
                             ${this.renderReviewerFeedback(reviewerFeedback)}
                         </div>
-                        <div class="user-feedback-section">
-                            <h5>Your Feedback:</h5>
-                            ${round.userFeedback 
-                                ? `<p class="user-feedback-text">${this.escapeHtml(round.userFeedback)}</p>
-                                   <span class="feedback-timestamp">Submitted: ${new Date(round.userFeedbackAt).toLocaleString()}</span>`
-                                : `<textarea id="userFeedback_${round.iteration}" class="user-feedback-input" placeholder="Add your feedback for this iteration..."></textarea>
-                                   <button class="btn btn-small btn-primary" onclick="dxoApp.submitUserFeedback(${round.iteration})">Submit Feedback</button>`
-                            }
-                        </div>
+                        ${round.userFeedback
+                    ? `<div class="user-feedback-section">
+                                   <h5>Your Feedback:</h5>
+                                   <p class="user-feedback-text">${this.escapeHtml(round.userFeedback)}</p>
+                                   <span class="feedback-timestamp">Submitted: ${new Date(round.userFeedbackAt).toLocaleString()}</span>
+                               </div>`
+                    : ''
+                }
                     </div>
                 </div>
             `;
@@ -1261,17 +1282,61 @@ Authoring rules:
         }
 
         let html = '<div class="reviewer-feedback-list">';
-        reviewerFeedback.forEach(rf => {
+        reviewerFeedback.forEach((rf, index) => {
             const approvedIcon = rf.approved ? '✓' : '';
+            const feedbackText = rf.feedback || '';
+            const feedbackLen = feedbackText.length;
+
+            // Parse markdown if marked is available, else escape html
+            let contentHtml = feedbackText;
+            // Simple newline to br if markdown not available, or use marked
+            if (typeof marked !== 'undefined') {
+                try {
+                    contentHtml = marked.parse(feedbackText);
+                } catch (e) {
+                    console.error('Markdown parse error:', e);
+                    contentHtml = this.escapeHtml(feedbackText).replace(/\n/g, '<br>');
+                }
+            } else {
+                contentHtml = this.escapeHtml(feedbackText).replace(/\n/g, '<br>');
+            }
+
+            // Check length for truncation (approx > 300 chars)
+            // We use a CSS class to handle the truncation visually
+            const isLong = feedbackLen > 350;
+            const expandedClass = isLong ? 'collapsible-feedback collapsed' : '';
+            const buttonHtml = isLong ? `<button class="btn-read-more" onclick="dxoApp.toggleFeedbackItem(this)">Read More</button>` : '';
+
             html += `
                 <div class="reviewer-feedback-item">
                     <div class="reviewer-name">${this.escapeHtml(rf.reviewerName)} ${approvedIcon}</div>
-                    <div class="reviewer-comment">${this.escapeHtml(rf.feedback).substring(0, 200)}...</div>
+                    <div class="reviewer-comment-container">
+                        <div class="reviewer-comment-content ${expandedClass}">
+                            ${contentHtml}
+                        </div>
+                        ${buttonHtml}
+                    </div>
                 </div>
             `;
         });
         html += '</div>';
         return html;
+    }
+
+    // Toggle feedback item expansion
+    toggleFeedbackItem(btn) {
+        const container = btn.previousElementSibling; // .reviewer-comment-content
+        if (container) {
+            const isCollapsed = container.classList.contains('collapsed');
+            if (isCollapsed) {
+                container.classList.remove('collapsed');
+                btn.textContent = 'Read Less';
+            } else {
+                container.classList.add('collapsed');
+                btn.textContent = 'Read More';
+                // Optional: scroll back up if it was very long?
+            }
+        }
     }
 
     // Show full draft in a modal
@@ -1281,7 +1346,7 @@ Authoring rules:
         // Find the draft content from already loaded feedback rounds
         const container = document.getElementById('feedbackRoundsList');
         const roundCard = container.querySelector(`[data-iteration="${iteration}"]`);
-        
+
         if (!roundCard) {
             this.showToast('Draft content not found', 'error');
             return;
@@ -1302,7 +1367,7 @@ Authoring rules:
 
             const feedbackRounds = await response.json();
             const round = feedbackRounds.find(r => r.iteration === iteration);
-            
+
             if (!round || !round.draftContent) {
                 this.showToast('Draft content not available', 'warning');
                 return;
@@ -1311,7 +1376,7 @@ Authoring rules:
             // Update modal content
             document.getElementById('draftModalTitle').textContent = `Iteration ${iteration} - Full Draft`;
             document.getElementById('draftModalContent').textContent = round.draftContent;
-            
+
             // Show modal
             document.getElementById('fullDraftModal').classList.remove('hidden');
         } catch (error) {
@@ -1362,6 +1427,95 @@ Authoring rules:
         const div = document.createElement('div');
         div.textContent = text || '';
         return div.innerHTML;
+    }
+
+    // Open feedback modal
+    openFeedbackModal() {
+        if (!this.currentSessionId) {
+            this.showToast('No active session', 'warning');
+            return;
+        }
+
+        const finalOutput = document.getElementById('finalOutput').value;
+        if (!finalOutput) {
+            this.showToast('No output to iterate on', 'warning');
+            return;
+        }
+
+        // Populate context
+        const topic = document.getElementById('sessionTopic').value;
+        document.getElementById('feedbackContextTopic').textContent = topic;
+        document.getElementById('feedbackContextOutput').textContent = finalOutput;
+
+        // Reset form
+        document.getElementById('feedbackComments').value = '';
+        document.getElementById('feedbackTone').value = '';
+        document.getElementById('feedbackLength').value = '';
+        document.getElementById('feedbackAudience').value = '';
+        document.getElementById('feedbackMaxIterations').value = '1';
+
+        // Show modal
+        document.getElementById('feedbackModal').classList.remove('hidden');
+    }
+
+    // Close feedback modal
+    closeFeedbackModal() {
+        document.getElementById('feedbackModal').classList.add('hidden');
+    }
+
+    // Submit iteration feedback
+    async submitIterationFeedback() {
+        if (!this.currentSessionId) {
+            this.showToast('No active session', 'warning');
+            return;
+        }
+
+        const comments = document.getElementById('feedbackComments').value.trim();
+        if (!comments) {
+            this.showToast('Please provide feedback comments', 'warning');
+            return;
+        }
+
+        const feedbackData = {
+            comments: comments,
+            tone: document.getElementById('feedbackTone').value,
+            length: document.getElementById('feedbackLength').value,
+            audience: document.getElementById('feedbackAudience').value,
+            maxAdditionalIterations: parseInt(document.getElementById('feedbackMaxIterations').value)
+        };
+
+        try {
+            const response = await fetch(`/api/session/${this.currentSessionId}/iterate-with-feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(feedbackData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to submit feedback');
+            }
+
+            this.closeFeedbackModal();
+            this.showToast('Feedback submitted - restarting session', 'success');
+            this.isRunning = true;
+            this.updateButtonStates();
+            this.updateStatus('Running');
+
+        } catch (error) {
+            console.error('Failed to submit iteration feedback:', error);
+            this.showToast(error.message || 'Failed to submit feedback', 'error');
+        }
+    }
+
+    // Update feedback button visibility based on session status
+    updateFeedbackButtonVisibility(status) {
+        const btn = document.getElementById('btnIterateWithFeedback');
+        if (status === 'Completed') {
+            btn.style.display = 'inline-block';
+        } else {
+            btn.style.display = 'none';
+        }
     }
 }
 
