@@ -159,10 +159,9 @@
     <div class="collapsible-content">
         <div style="padding: 1rem 1.5rem 0; display: flex; justify-content: flex-end;">
             <div class="output-controls">
-                <button id="btnIterateWithFeedback" class="btn btn-small btn-primary" style="display: none;">🔁 Iterate with Feedback</button>
+                <button id="btnIterateWithFeedback" class="btn btn-small btn-primary" style="display: none;">Iterate with Feedback</button>
                 <button id="btnCopyOutput" class="btn btn-small btn-secondary">📋 Copy</button>
-                <button id="btnDownloadMd" class="btn btn-small btn-secondary">⬇ MD</button>
-                <button id="btnDownloadTxt" class="btn btn-small btn-secondary">⬇ TXT</button>
+                <button id="btnDownloadOutput" class="btn btn-small btn-secondary" disabled>⬇ Download Output</button>
             </div>
         </div>
         <div class="output-content">
@@ -215,7 +214,7 @@
                         <div id="feedbackContextTopic" class="context-display"></div>
                     </div>
                     <div class="context-item">
-                        <label>Current Final Output (v1):</label>
+                        <label id="feedbackContextOutputLabel">Current Final Output (v1):</label>
                         <div id="feedbackContextOutput" class="context-display output-preview"></div>
                     </div>
                 </div>
@@ -284,8 +283,8 @@
                 <!-- Action Buttons -->
                 <br />
                 <div class="feedback-modal-actions">
-                    <button id="btnSubmitFeedback" class="btn btn-primary">▶️ Re-run with Feedback</button>
-                    <button id="btnCancelFeedback" class="btn btn-secondary" onclick="dxoApp.closeFeedbackModal()">Cancel</button>
+                    <button id="btnSubmitFeedback" class="btn btn-primary">Re-run</button>
+                    @* <button id="btnCancelFeedback" class="btn btn-secondary" onclick="dxoApp.closeFeedbackModal()">Cancel</button> *@
                 </div>
             </div>
         </div>
@@ -369,12 +368,12 @@
 <div id="exportModal" class="modal hidden">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Export Transcript</h3>
-            <button class="modal-close" onclick="closeExportModal()">&times;</button>
+            <h3 id="exportModalTitle">Export</h3>
+            <button class="modal-close" onclick="dxoApp.closeExportModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <button id="btnExportJson" class="btn btn-primary">Export as JSON</button>
-            <button id="btnExportMd" class="btn btn-primary">Export as Markdown</button>
+            <button id="btnExportOption1" class="btn btn-primary">Download as JSON</button>
+            <button id="btnExportOption2" class="btn btn-primary">Download as TXT</button>
         </div>
     </div>
 </div>

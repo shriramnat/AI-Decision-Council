@@ -23,6 +23,12 @@ public class Session
 
     public int CurrentIteration { get; set; } = 0;
 
+    /// <summary>
+    /// Tracks the feedback version (v1, v2, v3, etc.). 
+    /// Increments each time user submits feedback to iterate on completed output.
+    /// </summary>
+    public int FeedbackVersion { get; set; } = 1;
+
     [MaxLength(50)]
     public string StopMarker { get; set; } = "FINAL:";
 

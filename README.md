@@ -148,7 +148,7 @@ You can also customize them by modifying the root prompt, once they are added.
 ![Diagram](/docs/images/mainpage-filled.png)
 
 ### Additional Capabilities
-- You can view the Live interaction stream between the agents by clicking the "View Agent Interactions" button. This will give you a pretty good idea of what each of the agents are sending out in each iteration.
+- You can view the Live interaction stream between the agents by clicking the "View Interactions" button. This will give you a pretty good idea of what each of the agents are sending out in each iteration.
 ![Diagram](/docs/images/interactionstream.png)
 
 - Session controls (pause, reset, download transcript) and Configurable session-level constraints and enforcement rules are accessible from the Seccion settings fly out. Click the gear icon next to the Stop button to access this.

@@ -9,25 +9,25 @@
     --warning-color: #ff9f0a;
     --danger-color: #ff453a;
     --info-color: #ff9500;
-    
+
     /* Backgrounds - Pure black theme */
     --bg-color: #000000;
     --bg-gradient: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #000000 100%);
     --bg-secondary: rgba(255, 255, 255, 0.03);
     --bg-tertiary: rgba(255, 255, 255, 0.05);
-    
+
     /* Glass effect colors with orange tint */
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 149, 0, 0.2);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --glass-blur: blur(20px);
-    
+
     /* Text colors - White for accessibility (WCAG AA compliant) */
     --text-color: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-tertiary: rgba(255, 255, 255, 0.5);
     --border-color: rgba(255, 149, 0, 0.2);
-    
+
     /* Persona colors - Matching JavaScript dynamic palette */
     --creator-color: #ff9500;
     --creator-bg: rgba(255, 149, 0, 0.1);
@@ -38,7 +38,7 @@
     --reviewer2-color: #ff9f0a;
     --reviewer2-bg: rgba(255, 159, 10, 0.1);
     --reviewer2-border: rgba(255, 159, 10, 0.3);
-    
+
     /* Shadows and effects - Orange glow */
     --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
@@ -46,7 +46,7 @@
     --radius: 12px;
     --radius-lg: 20px;
     --radius-xl: 28px;
-    
+
     /* Transitions */
     --transition-fast: 0.15s ease;
     --transition-normal: 0.25s ease;
@@ -65,7 +65,7 @@
 
 /* User Dropdown */
 .user-dropdown {
-    background: rgba(20, 20, 20, 0.98);
+    background: #141414;
 }
 
 /* Dropdown Item */
@@ -97,62 +97,71 @@
     background: rgba(0, 0, 0, 0.3);
 }
 
-/* Buttons - Grey theme */
+/* Buttons - Unified modern minimalist style */
 .btn-primary {
-    background: #4a4a4a;
+    background: #3a3a3a;
     color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #5a5a5a;
-    transform: scale(1.02);
+    background: #4a4a4a;
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btn-secondary {
-    background: #3a3a3a;
+    background: #2a2a2a;
     color: var(--text-color);
     border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #4a4a4a;
+    background: #3a3a3a;
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
 .btn-success {
-    background: #4a4a4a;
-    color: white;
+    background: #2a2a2a;
+    color: var(--success-color);
+    border: 1px solid rgba(48, 209, 88, 0.3);
 }
 
 .btn-success:hover:not(:disabled) {
-    background: #5a5a5a;
+    background: rgba(48, 209, 88, 0.1);
+    border-color: rgba(48, 209, 88, 0.5);
 }
 
 .btn-warning {
-    background: #4a4a4a;
-    color: white;
+    background: #2a2a2a;
+    color: var(--warning-color);
+    border: 1px solid rgba(255, 159, 10, 0.3);
 }
 
 .btn-warning:hover:not(:disabled) {
-    background: #5a5a5a;
+    background: rgba(255, 159, 10, 0.1);
+    border-color: rgba(255, 159, 10, 0.5);
 }
 
 .btn-danger {
-    background: #4a4a4a;
-    color: white;
+    background: #2a2a2a;
+    color: var(--danger-color);
+    border: 1px solid rgba(255, 69, 58, 0.3);
 }
 
 .btn-danger:hover:not(:disabled) {
-    background: #5a5a5a;
+    background: rgba(255, 69, 58, 0.1);
+    border-color: rgba(255, 69, 58, 0.5);
 }
 
 .btn-info {
-    background: #4a4a4a;
-    color: var(--text-color);
+    background: #2a2a2a;
+    color: var(--info-color);
     border: 1px solid rgba(255, 149, 0, 0.3);
 }
 
 .btn-info:hover:not(:disabled) {
-    background: #5a5a5a;
+    background: rgba(255, 149, 0, 0.1);
+    border-color: rgba(255, 149, 0, 0.5);
 }
 
 /* Collapsible Sections */
@@ -465,7 +474,7 @@
 
 /* Toast */
 .toast {
-    background: rgba(30, 30, 30, 0.95);
+    background: #1e1e1e;
 }
 
 /* Settings Page */

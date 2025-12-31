@@ -27,7 +27,7 @@ public interface IOrchestrationService
     void CancelSession(Guid sessionId);
     Task<List<FeedbackRound>> GetFeedbackRoundsAsync(Guid sessionId, CancellationToken cancellationToken = default);
     Task SubmitUserFeedbackAsync(Guid sessionId, int iteration, string feedback, CancellationToken cancellationToken = default);
-    Task IterateWithFeedbackAsync(Guid sessionId, string comments, string? tone, string? length, string? audience, int maxAdditionalIterations, CancellationToken cancellationToken = default);
+    Task<Session> IterateWithFeedbackAsync(Guid sessionId, string comments, string? tone, string? length, string? audience, int maxAdditionalIterations, CancellationToken cancellationToken = default);
 }
 
 public class OrchestrationService : IOrchestrationService
@@ -795,7 +795,7 @@ Output format:
 4) Checklist (pass/fail items)";
     }
 
-    public async Task IterateWithFeedbackAsync(
+    public async Task<Session> IterateWithFeedbackAsync(
         Guid sessionId,
         string comments,
         string? tone,
@@ -910,6 +910,9 @@ Output format:
 
         dbContext.Messages.Add(feedbackMessage);
 
+        // Increment feedback version
+        session.FeedbackVersion++;
+
         // Reset session state for re-iteration
         session.Status = SessionStatus.Running;
         session.StopReason = StopReason.MaxIterationsReached; // Temporary value, will be updated when session completes
@@ -926,8 +929,8 @@ Output format:
         _sessionNeedsFinalIteration.TryRemove(sessionId, out _);
 
         _logger.LogInformation(
-            "Session {SessionId} reset for feedback iteration. Current iteration: {Current}, New max: {Max}",
-            sessionId, session.CurrentIteration, newMaxIterations);
+            "Session {SessionId} reset for feedback iteration v{Version}. Current iteration: {Current}, New max: {Max}",
+            sessionId, session.FeedbackVersion, session.CurrentIteration, newMaxIterations);
 
         // Start the session orchestration loop again
         var cts = new CancellationTokenSource();
@@ -958,6 +961,9 @@ Output format:
                 _sessionCancellations.TryRemove(sessionId, out _);
             }
         }, cancellationToken);
+
+        // Return the updated session
+        return session;
     }
 }
 

@@ -284,45 +284,79 @@ body {
 }
 
 
-/* --- Buttons --- */
-.btn {
-    border-radius: var(--radius);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    transition: var(--transition);
-    border: none;
-    position: relative;
-    overflow: hidden;
-}
-
+/* --- Buttons - Unified modern minimalist style --- */
 .btn-primary {
-    background: var(--primary-gradient);
-    color: white;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    background: #ffffff;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
 .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
-    transform: translateY(-1px);
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
 .btn-secondary {
-    background: white;
+    background: #ffffff;
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-xs);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+    background: #f8fafc;
+    border-color: var(--text-secondary);
+    color: var(--text-color);
+}
+
+.btn-success {
     background: #ffffff;
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.btn-success:hover:not(:disabled) {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-warning {
+    background: #ffffff;
+    color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: var(--warning-color);
+    color: white;
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%);
+    background: #ffffff;
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: var(--danger-color);
     color: white;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-info {
+    background: #ffffff;
+    color: var(--info-color);
+    border: 1px solid var(--info-color);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.btn-info:hover:not(:disabled) {
+    background: var(--info-color);
+    color: white;
 }
 
 /* Floating Action Buttons */

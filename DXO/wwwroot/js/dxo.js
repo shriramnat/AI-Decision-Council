@@ -355,6 +355,9 @@ Authoring rules:
                 // though css class 'markdown-body' usually handles it.
             }
 
+            // Enable download button when output is available
+            this.updateOutputButtonStates();
+
             this.showToast(`Session completed: ${stopReason}`, 'success');
             this.loadFeedbackRounds(); // Load feedback rounds when session completes
         });
@@ -429,16 +432,15 @@ Authoring rules:
 
         // Output buttons
         document.getElementById('btnCopyOutput').addEventListener('click', () => this.copyOutput());
-        document.getElementById('btnDownloadMd').addEventListener('click', () => this.downloadOutput('md'));
-        document.getElementById('btnDownloadTxt').addEventListener('click', () => this.downloadOutput('txt'));
+        document.getElementById('btnDownloadOutput').addEventListener('click', () => this.showExportModal('finalOutput'));
 
         // Feedback button
         document.getElementById('btnIterateWithFeedback').addEventListener('click', () => this.openFeedbackModal());
         document.getElementById('btnSubmitFeedback').addEventListener('click', () => this.submitIterationFeedback());
 
         // Export modal buttons
-        document.getElementById('btnExportJson').addEventListener('click', () => this.exportTranscript('json'));
-        document.getElementById('btnExportMd').addEventListener('click', () => this.exportTranscript('md'));
+        document.getElementById('btnExportOption1').addEventListener('click', () => this.handleExportOption1());
+        document.getElementById('btnExportOption2').addEventListener('click', () => this.handleExportOption2());
 
         // Clear trace button
         document.getElementById('btnClearTrace').addEventListener('click', () => this.clearTrace());
@@ -694,7 +696,23 @@ Authoring rules:
         this.updateIterationCount(0);
         document.getElementById('sessionId').textContent = '-';
         document.getElementById('finalOutput').value = '';
+        this.updateOutputButtonStates();
         this.showToast('Session reset', 'info');
+    }
+
+    // Update output button states based on output availability
+    updateOutputButtonStates() {
+        const output = document.getElementById('finalOutput').value;
+        const downloadBtn = document.getElementById('btnDownloadOutput');
+        const copyBtn = document.getElementById('btnCopyOutput');
+        
+        if (output && output.trim().length > 0) {
+            downloadBtn.disabled = false;
+            copyBtn.disabled = false;
+        } else {
+            downloadBtn.disabled = true;
+            copyBtn.disabled = false; // Keep copy enabled since it shows a warning
+        }
     }
 
     // Reset persona memory
@@ -742,6 +760,7 @@ Authoring rules:
         document.getElementById('btnStart').disabled = this.isRunning;
         document.getElementById('btnStep').disabled = this.isRunning;
         document.getElementById('btnStop').disabled = !this.isRunning;
+        document.getElementById('btnSessionSettings').disabled = this.isRunning;
     }
 
     // Update status display
@@ -933,12 +952,15 @@ Authoring rules:
         const output = document.getElementById('finalOutput').value;
         if (!output) {
             this.showToast('No output to download', 'warning');
+            this.closeExportModal();
             return;
         }
 
         const filename = `dxo-output-${Date.now()}.${format}`;
         const blob = new Blob([output], { type: 'text/plain' });
         this.downloadBlob(blob, filename);
+        this.closeExportModal();
+        this.showToast('Output downloaded', 'success');
     }
 
     // Export transcript
@@ -985,14 +1007,51 @@ Authoring rules:
         URL.revokeObjectURL(url);
     }
 
-    // Show export modal
-    showExportModal() {
-        document.getElementById('exportModal').classList.remove('hidden');
+    // Show export modal with context (transcript or finalOutput)
+    showExportModal(context = 'transcript') {
+        this.exportContext = context;
+        const modal = document.getElementById('exportModal');
+        const title = document.getElementById('exportModalTitle');
+        const btn1 = document.getElementById('btnExportOption1');
+        const btn2 = document.getElementById('btnExportOption2');
+
+        if (context === 'transcript') {
+            // Session transcript export
+            title.textContent = 'Export Session Transcript';
+            btn1.textContent = 'Download as JSON';
+            btn2.textContent = 'Download as Markdown';
+        } else {
+            // Final output export
+            title.textContent = 'Download Final Output';
+            btn1.textContent = 'Download as Markdown';
+            btn2.textContent = 'Download as TXT';
+        }
+
+        modal.classList.remove('hidden');
     }
 
     // Close export modal
     closeExportModal() {
         document.getElementById('exportModal').classList.add('hidden');
+        this.exportContext = null;
+    }
+
+    // Handle first export option button
+    handleExportOption1() {
+        if (this.exportContext === 'transcript') {
+            this.exportTranscript('json');
+        } else {
+            this.downloadOutput('md');
+        }
+    }
+
+    // Handle second export option button
+    handleExportOption2() {
+        if (this.exportContext === 'transcript') {
+            this.exportTranscript('md');
+        } else {
+            this.downloadOutput('txt');
+        }
     }
 
     // Create toast container
@@ -1430,7 +1489,7 @@ Authoring rules:
     }
 
     // Open feedback modal
-    openFeedbackModal() {
+    async openFeedbackModal() {
         if (!this.currentSessionId) {
             this.showToast('No active session', 'warning');
             return;
@@ -1440,6 +1499,23 @@ Authoring rules:
         if (!finalOutput) {
             this.showToast('No output to iterate on', 'warning');
             return;
+        }
+
+        // Fetch session to get feedback version
+        try {
+            const response = await fetch(`/api/session/${this.currentSessionId}`);
+            if (!response.ok) throw new Error('Failed to fetch session');
+            
+            const session = await response.json();
+            const feedbackVersion = session.feedbackVersion || 1;
+            
+            // Update the output label with version
+            const outputLabel = document.getElementById('feedbackContextOutputLabel');
+            outputLabel.textContent = `Current Final Output (v${feedbackVersion}):`;
+        } catch (error) {
+            console.error('Failed to fetch session for version:', error);
+            // Fallback to v1 if fetch fails
+            document.getElementById('feedbackContextOutputLabel').textContent = 'Current Final Output (v1):';
         }
 
         // Populate context
@@ -1501,6 +1577,15 @@ Authoring rules:
                 const error = await response.json();
                 throw new Error(error.error || 'Failed to submit feedback');
             }
+
+            // Get the updated session from the response
+            const updatedSession = await response.json();
+            
+            // Update the UI with the new max iterations
+            document.getElementById('maxIterations').value = updatedSession.maxIterations;
+            
+            // Update the iteration count display with current iteration and new max
+            this.updateIterationCount(updatedSession.currentIteration);
 
             this.closeFeedbackModal();
             this.showToast('Feedback submitted - restarting session', 'success');

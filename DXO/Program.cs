@@ -493,6 +493,11 @@ app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, Iter
         return Results.BadRequest(new { error = "Feedback comments cannot be empty" });
     }
     
+    if (request.MaxAdditionalIterations < 1 || request.MaxAdditionalIterations > 3)
+    {
+        return Results.BadRequest(new { error = "Max additional iterations must be between 1 and 3" });
+    }
+    
     try
     {
         var session = await orchestration.GetSessionAsync(id, ct);
@@ -536,7 +541,7 @@ app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, Iter
         }
 
         // Process the feedback iteration request
-        await orchestration.IterateWithFeedbackAsync(
+        var updatedSession = await orchestration.IterateWithFeedbackAsync(
             id,
             request.Comments,
             request.Tone,
@@ -546,7 +551,7 @@ app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, Iter
             ct
         );
 
-        return Results.Ok(new { success = true });
+        return Results.Ok(updatedSession);
     }
     catch (InvalidOperationException ex)
     {
