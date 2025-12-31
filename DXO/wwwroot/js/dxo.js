@@ -1488,23 +1488,47 @@ Authoring rules:
         feedbackRounds.forEach(round => {
             const reviewerFeedback = round.reviewerFeedbackJson ? JSON.parse(round.reviewerFeedbackJson) : [];
             const approvedBadge = round.allReviewersApproved ? '<span class="badge badge-success">✓ All Approved</span>' : '';
+            
+            // Check if reviewer feedback has any actual content
+            const hasReviewerContent = reviewerFeedback && reviewerFeedback.length > 0 && 
+                reviewerFeedback.some(rf => rf.feedback && rf.feedback.trim().length > 0);
+            
+            // Render draft content as markdown
+            let draftPreviewHtml = '';
+            const draftText = round.draftContent || 'No draft available';
+            if (typeof marked !== 'undefined') {
+                try {
+                    // Get first 300 chars then parse markdown
+                    const preview = draftText.substring(0, 300) + (draftText.length > 300 ? '...' : '');
+                    draftPreviewHtml = marked.parse(preview);
+                } catch (e) {
+                    draftPreviewHtml = this.escapeHtml(draftText.substring(0, 300)) + '...';
+                }
+            } else {
+                draftPreviewHtml = this.escapeHtml(draftText.substring(0, 300)) + '...';
+            }
 
             html += `
                 <div class="feedback-round-card" data-iteration="${round.iteration}">
                     <div class="feedback-round-header">
-                        <h4>Iteration ${round.iteration} ${approvedBadge}</h4>
-                        <span class="timestamp">${new Date(round.createdAt).toLocaleString()}</span>
+                        <div class="feedback-round-title">
+                            <h4>Iteration ${round.iteration} ${approvedBadge}</h4>
+                        </div>
+                        <span class="feedback-timestamp">${new Date(round.createdAt).toLocaleString()}</span>
                     </div>
                     <div class="feedback-round-body">
                         <div class="draft-content-section">
-                            <h5>Creator's Draft:</h5>
-                            <div class="draft-preview">${this.escapeHtml(round.draftContent || 'No draft available').substring(0, 300)}...</div>
-                            <button class="btn btn-small btn-secondary" onclick="dxoApp.showFullDraft(${round.iteration})">View Full Draft</button>
+                            <div class="draft-section-header">
+                                <h5>Creator's Draft:</h5>
+                                <button class="btn btn-small btn-secondary" onclick="dxoApp.showFullDraft(${round.iteration})">View Full Draft</button>
+                            </div>
+                            <div class="draft-preview markdown-body">${draftPreviewHtml}</div>
                         </div>
+                        ${hasReviewerContent ? `
                         <div class="reviewer-feedback-section">
                             <h5>Reviewer Feedback:</h5>
                             ${this.renderReviewerFeedback(reviewerFeedback)}
-                        </div>
+                        </div>` : ''}
                         ${round.userFeedback
                     ? `<div class="user-feedback-section">
                                    <h5>Your Feedback:</h5>
@@ -1619,9 +1643,12 @@ Authoring rules:
                 return;
             }
 
-            // Update modal content
+            // Update modal content and render markdown
+            const modalContent = document.getElementById('draftModalContent');
             document.getElementById('draftModalTitle').textContent = `Iteration ${iteration} - Full Draft`;
-            document.getElementById('draftModalContent').textContent = round.draftContent;
+            
+            // Render markdown in modal
+            this.renderMarkdown(modalContent, round.draftContent);
 
             // Show modal
             document.getElementById('fullDraftModal').classList.remove('hidden');

@@ -1792,6 +1792,212 @@ a:active {
     vertical-align: middle;
 }
 
+/* Feedback History Styles */
+.feedback-round-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.feedback-round-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.feedback-round-title h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feedback-round-header .feedback-timestamp {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.feedback-round-body {
+    padding: 1.25rem;
+}
+
+.draft-content-section,
+.reviewer-feedback-section,
+.user-feedback-section {
+    margin-bottom: 1.25rem;
+}
+
+.draft-content-section:last-child,
+.reviewer-feedback-section:last-child,
+.user-feedback-section:last-child {
+    margin-bottom: 0;
+}
+
+.draft-content-section h5,
+.reviewer-feedback-section h5,
+.user-feedback-section h5 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.draft-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.draft-section-header h5 {
+    margin: 0;
+}
+
+.draft-preview {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+.draft-preview.markdown-body {
+    font-size: 0.875rem;
+}
+
+.reviewer-feedback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.reviewer-feedback-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+
+.reviewer-name {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.reviewer-comment-container {
+    position: relative;
+}
+
+.reviewer-comment-content {
+    color: var(--text-color);
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.reviewer-comment-content.collapsible-feedback {
+    position: relative;
+}
+
+.reviewer-comment-content.collapsed {
+    max-height: 150px;
+    overflow: hidden;
+}
+
+.reviewer-comment-content.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--bg-secondary));
+    pointer-events: none;
+}
+
+.btn-read-more {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 0.5rem 0 0 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-decoration: underline;
+    transition: color var(--transition-fast);
+}
+
+.btn-read-more:hover {
+    color: var(--primary-hover);
+}
+
+.no-feedback {
+    color: var(--text-tertiary);
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+.user-feedback-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+
+.user-feedback-text {
+    color: var(--text-color);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin: 0 0 0.5rem 0;
+}
+
+.user-feedback-section .feedback-timestamp {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+/* Draft Modal Styles */
+.draft-modal-content {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+.draft-modal-content.markdown-body {
+    font-size: 0.9375rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .persona-cards {
@@ -1823,5 +2029,15 @@ a:active {
 
     .tagline {
         display: none;
+    }
+    
+    .feedback-round-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .feedback-round-header .feedback-timestamp {
+        font-size: 0.75rem;
     }
 }
