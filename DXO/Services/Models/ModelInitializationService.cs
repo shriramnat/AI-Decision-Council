@@ -10,6 +10,7 @@ namespace DXO.Services.Models;
 public interface IModelInitializationService
 {
     Task InitializeModelsAsync();
+    Task InitializeDefaultModelsForUserAsync(string userEmail);
 }
 
 public class ModelInitializationService : IModelInitializationService
@@ -30,20 +31,26 @@ public class ModelInitializationService : IModelInitializationService
 
     public async Task InitializeModelsAsync()
     {
+        // This method is now deprecated - initialization happens per-user
+        _logger.LogInformation("Global model initialization skipped - models are now initialized per-user");
+    }
+
+    public async Task InitializeDefaultModelsForUserAsync(string userEmail)
+    {
         try
         {
-            var existingModels = await _modelService.GetAllModelsAsync();
+            var existingModels = await _modelService.GetAllModelsAsync(userEmail);
             
-            // If there are already models configured, skip initialization
+            // If user already has models configured, skip initialization
             if (existingModels.Any())
             {
-                _logger.LogInformation("Models already configured. Skipping initialization.");
+                _logger.LogInformation("User {UserEmail} already has models configured. Skipping initialization.", userEmail);
                 return;
             }
 
-            _logger.LogInformation("Initializing models from appsettings.json...");
+            _logger.LogInformation("Initializing default models for user {UserEmail} from appsettings.json...", userEmail);
 
-            // Add all models from the Models configuration array
+            // Add all models from the Models configuration array for this user
             if (_options.Models != null && _options.Models.Length > 0)
             {
                 foreach (var modelConfig in _options.Models)
@@ -57,38 +64,27 @@ public class ModelInitializationService : IModelInitializationService
 
                     try
                     {
-                        // Parse provider from string
-                        _logger.LogInformation(
-                            "Parsing provider string: '{ProviderString}' for model: {ModelName}",
-                            modelConfig.Provider ?? "(null)",
-                            modelConfig.ModelName
-                        );
-                        
                         var provider = ModelProviderExtensions.FromString(modelConfig.Provider);
                         
-                        _logger.LogInformation(
-                            "Parsed provider enum: {ProviderEnum} ({ProviderInt}) for model: {ModelName}",
-                            provider,
-                            (int)provider,
-                            modelConfig.ModelName
-                        );
-                        
                         await _modelService.AddModelAsync(
+                            userEmail: userEmail,
                             modelName: modelConfig.ModelName,
                             endpoint: modelConfig.Endpoint,
                             provider: provider,
+                            apiKey: null, // No API key - user must provide
                             displayName: modelConfig.DisplayName
                         );
                         
                         _logger.LogInformation(
-                            "Added {Provider} model: {ModelName}", 
+                            "Added {Provider} model: {ModelName} for user {UserEmail}", 
                             provider.ToDisplayString(), 
-                            modelConfig.ModelName
+                            modelConfig.ModelName,
+                            userEmail
                         );
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Failed to add model {ModelName}", modelConfig.ModelName);
+                        _logger.LogWarning(ex, "Failed to add model {ModelName} for user {UserEmail}", modelConfig.ModelName, userEmail);
                     }
                 }
             }
@@ -97,11 +93,11 @@ public class ModelInitializationService : IModelInitializationService
                 _logger.LogWarning("No models configured in appsettings.json");
             }
 
-            _logger.LogInformation("Model initialization complete.");
+            _logger.LogInformation("Default model initialization complete for user {UserEmail}.", userEmail);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during model initialization");
+            _logger.LogError(ex, "Error during model initialization for user {UserEmail}", userEmail);
         }
     }
 }

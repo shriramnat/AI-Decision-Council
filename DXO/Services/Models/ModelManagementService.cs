@@ -1,5 +1,6 @@
 using DXO.Data;
 using DXO.Models;
+using DXO.Services.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace DXO.Services.Models;
@@ -30,62 +31,77 @@ public class ModelConfiguration
 /// </summary>
 public interface IModelManagementService
 {
-    Task<List<ConfiguredModel>> GetAllModelsAsync();
-    Task<ConfiguredModel?> GetModelByNameAsync(string modelName);
-    Task<ConfiguredModel> AddModelAsync(string modelName, string endpoint, ModelProvider provider, string? displayName = null);
-    Task<ConfiguredModel> UpdateModelAsync(int id, string modelName, string endpoint, ModelProvider provider, string? displayName = null);
-    Task<bool> DeleteModelAsync(int id);
-    Task<bool> ModelExistsAsync(string modelName, int? excludeId = null);
-    void SetApiKeyForModel(string modelName, string? apiKey);
+    Task<List<ConfiguredModel>> GetAllModelsAsync(string userEmail);
+    Task<ConfiguredModel?> GetModelByNameAsync(string userEmail, string modelName);
+    Task<ConfiguredModel> AddModelAsync(string userEmail, string modelName, string endpoint, ModelProvider provider, string? apiKey = null, string? displayName = null);
+    Task<ConfiguredModel> UpdateModelAsync(string userEmail, int id, string modelName, string endpoint, ModelProvider provider, string? apiKey = null, string? displayName = null);
+    Task<bool> DeleteModelAsync(string userEmail, int id);
+    Task<bool> ModelExistsAsync(string userEmail, string modelName, int? excludeId = null);
     
     /// <summary>
     /// Gets complete configuration for a model (endpoint, API key, type)
     /// </summary>
-    Task<ModelConfiguration?> GetModelConfigurationAsync(string modelName);
+    Task<ModelConfiguration?> GetModelConfigurationAsync(string userEmail, string modelName);
 }
 
 public class ModelManagementService : IModelManagementService
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    // In-memory storage for API keys (not persisted to database for security)
-    private readonly Dictionary<string, string> _apiKeys = new();
+    private readonly IApiKeyEncryptionService _encryptionService;
+    private readonly ILogger<ModelManagementService> _logger;
 
-    public ModelManagementService(IServiceScopeFactory scopeFactory)
+    public ModelManagementService(
+        IServiceScopeFactory scopeFactory,
+        IApiKeyEncryptionService encryptionService,
+        ILogger<ModelManagementService> logger)
     {
         _scopeFactory = scopeFactory;
+        _encryptionService = encryptionService;
+        _logger = logger;
     }
 
-    public async Task<List<ConfiguredModel>> GetAllModelsAsync()
+    public async Task<List<ConfiguredModel>> GetAllModelsAsync(string userEmail)
     {
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DxoDbContext>();
         return await context.ConfiguredModels
+            .Where(m => m.UserEmail == userEmail)
             .OrderBy(m => m.ModelName)
             .ToListAsync();
     }
 
-    public async Task<ConfiguredModel?> GetModelByNameAsync(string modelName)
+    public async Task<ConfiguredModel?> GetModelByNameAsync(string userEmail, string modelName)
     {
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DxoDbContext>();
         return await context.ConfiguredModels
-            .FirstOrDefaultAsync(m => m.ModelName == modelName);
+            .FirstOrDefaultAsync(m => m.UserEmail == userEmail && m.ModelName == modelName);
     }
 
-    public async Task<ConfiguredModel> AddModelAsync(string modelName, string endpoint, ModelProvider provider, string? displayName = null)
+    public async Task<ConfiguredModel> AddModelAsync(string userEmail, string modelName, string endpoint, ModelProvider provider, string? apiKey = null, string? displayName = null)
     {
-        // Check for duplicates
-        if (await ModelExistsAsync(modelName))
+        // Check for duplicates for this user
+        if (await ModelExistsAsync(userEmail, modelName))
         {
-            throw new InvalidOperationException($"A model with the name '{modelName}' already exists.");
+            throw new InvalidOperationException($"A model with the name '{modelName}' already exists for this user.");
+        }
+
+        // Encrypt API key if provided
+        string? encryptedApiKey = null;
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            encryptedApiKey = _encryptionService.Encrypt(apiKey);
+            _logger.LogInformation("Encrypted API key for model: {ModelName}", modelName);
         }
 
         var model = new ConfiguredModel
         {
+            UserEmail = userEmail,
             ModelName = modelName,
             DisplayName = displayName,
             Endpoint = endpoint,
             Provider = provider,
+            ApiKey = encryptedApiKey,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -95,32 +111,27 @@ public class ModelManagementService : IModelManagementService
         context.ConfiguredModels.Add(model);
         await context.SaveChangesAsync();
 
+        _logger.LogInformation("Added model {ModelName} for user {UserEmail}", modelName, userEmail);
         return model;
     }
 
-    public async Task<ConfiguredModel> UpdateModelAsync(int id, string modelName, string endpoint, ModelProvider provider, string? displayName = null)
+    public async Task<ConfiguredModel> UpdateModelAsync(string userEmail, int id, string modelName, string endpoint, ModelProvider provider, string? apiKey = null, string? displayName = null)
     {
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DxoDbContext>();
         
-        var model = await context.ConfiguredModels.FindAsync(id);
+        var model = await context.ConfiguredModels
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserEmail == userEmail);
+        
         if (model == null)
         {
-            throw new InvalidOperationException($"Model with ID {id} not found.");
+            throw new InvalidOperationException($"Model with ID {id} not found for this user.");
         }
 
         // Check for duplicate name (excluding current model)
-        if (model.ModelName != modelName && await ModelExistsAsync(modelName, id))
+        if (model.ModelName != modelName && await ModelExistsAsync(userEmail, modelName, id))
         {
-            throw new InvalidOperationException($"A model with the name '{modelName}' already exists.");
-        }
-
-        // If model name is changing, update the API key dictionary
-        if (model.ModelName != modelName && _apiKeys.ContainsKey(model.ModelName))
-        {
-            var apiKey = _apiKeys[model.ModelName];
-            _apiKeys.Remove(model.ModelName);
-            _apiKeys[modelName] = apiKey;
+            throw new InvalidOperationException($"A model with the name '{modelName}' already exists for this user.");
         }
 
         model.ModelName = modelName;
@@ -129,40 +140,54 @@ public class ModelManagementService : IModelManagementService
         model.Provider = provider;
         model.UpdatedAt = DateTime.UtcNow;
 
+        // Update API key if provided (null means don't update, empty string means clear)
+        if (apiKey != null)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                model.ApiKey = null;
+                _logger.LogInformation("Cleared API key for model {ModelName}", modelName);
+            }
+            else
+            {
+                model.ApiKey = _encryptionService.Encrypt(apiKey);
+                _logger.LogInformation("Updated API key for model {ModelName}", modelName);
+            }
+        }
+
         await context.SaveChangesAsync();
 
+        _logger.LogInformation("Updated model {ModelName} for user {UserEmail}", modelName, userEmail);
         return model;
     }
 
-    public async Task<bool> DeleteModelAsync(int id)
+    public async Task<bool> DeleteModelAsync(string userEmail, int id)
     {
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DxoDbContext>();
         
-        var model = await context.ConfiguredModels.FindAsync(id);
+        var model = await context.ConfiguredModels
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserEmail == userEmail);
+        
         if (model == null)
         {
             return false;
         }
 
-        // Remove associated API key
-        if (_apiKeys.ContainsKey(model.ModelName))
-        {
-            _apiKeys.Remove(model.ModelName);
-        }
-
         context.ConfiguredModels.Remove(model);
         await context.SaveChangesAsync();
 
+        _logger.LogInformation("Deleted model {ModelName} for user {UserEmail}", model.ModelName, userEmail);
         return true;
     }
 
-    public async Task<bool> ModelExistsAsync(string modelName, int? excludeId = null)
+    public async Task<bool> ModelExistsAsync(string userEmail, string modelName, int? excludeId = null)
     {
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DxoDbContext>();
         
-        var query = context.ConfiguredModels.Where(m => m.ModelName == modelName);
+        var query = context.ConfiguredModels
+            .Where(m => m.UserEmail == userEmail && m.ModelName == modelName);
         
         if (excludeId.HasValue)
         {
@@ -172,44 +197,40 @@ public class ModelManagementService : IModelManagementService
         return await query.AnyAsync();
     }
 
-    public void SetApiKeyForModel(string modelName, string? apiKey)
-    {
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            _apiKeys.Remove(modelName);
-            Console.WriteLine($"[ModelManagement] Removed API key for model: {modelName}");
-        }
-        else
-        {
-            _apiKeys[modelName] = apiKey;
-            Console.WriteLine($"[ModelManagement] Set API key for model: {modelName} (length: {apiKey.Length})");
-            Console.WriteLine($"[ModelManagement] Current keys in memory: {string.Join(", ", _apiKeys.Keys)}");
-        }
-    }
-
     /// <summary>
-    /// Gets complete configuration for a model including API key from memory
+    /// Gets complete configuration for a model including decrypted API key from database
     /// </summary>
-    public async Task<ModelConfiguration?> GetModelConfigurationAsync(string modelName)
+    public async Task<ModelConfiguration?> GetModelConfigurationAsync(string userEmail, string modelName)
     {
-        Console.WriteLine($"[ModelManagement] GetModelConfigurationAsync called for: {modelName}");
+        _logger.LogDebug("GetModelConfigurationAsync called for user: {UserEmail}, model: {ModelName}", userEmail, modelName);
         
-        var model = await GetModelByNameAsync(modelName);
+        var model = await GetModelByNameAsync(userEmail, modelName);
         if (model == null)
         {
-            Console.WriteLine($"[ModelManagement] Model '{modelName}' not found in database");
+            _logger.LogDebug("Model '{ModelName}' not found for user {UserEmail}", modelName, userEmail);
             return null;
         }
 
-        var hasApiKey = _apiKeys.TryGetValue(modelName, out var apiKey);
-        Console.WriteLine($"[ModelManagement] Model '{modelName}' found. Has API key: {hasApiKey}");
-        Console.WriteLine($"[ModelManagement] All keys in memory: {string.Join(", ", _apiKeys.Keys)}");
+        // Decrypt API key if present
+        string? decryptedApiKey = null;
+        if (!string.IsNullOrEmpty(model.ApiKey))
+        {
+            try
+            {
+                decryptedApiKey = _encryptionService.Decrypt(model.ApiKey);
+                _logger.LogDebug("Successfully decrypted API key for model {ModelName}", modelName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to decrypt API key for model {ModelName}", modelName);
+            }
+        }
 
         return new ModelConfiguration
         {
             ModelName = model.ModelName,
             Endpoint = model.Endpoint,
-            ApiKey = apiKey,
+            ApiKey = decryptedApiKey,
             Provider = model.Provider
         };
     }

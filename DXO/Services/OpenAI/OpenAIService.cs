@@ -48,35 +48,25 @@ public class OpenAIService : IOpenAIService
 
     public bool HasApiKey(string? model = null)
     {
-        Console.WriteLine($"[OpenAIService] HasApiKey called for model: {model}");
-        
-        if (string.IsNullOrEmpty(model))
-        {
-            Console.WriteLine($"[OpenAIService] Model name is null or empty, returning false");
-            return false;
-        }
-
-        try
-        {
-            var providerService = _providerFactory.GetProviderServiceAsync(model).Result;
-            var hasKey = providerService.HasApiKey(model);
-            Console.WriteLine($"[OpenAIService] Provider service returned HasApiKey={hasKey} for model: {model}");
-            return hasKey;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[OpenAIService] Exception checking API key for model '{model}': {ex.Message}");
-            return false;
-        }
+        // This method is deprecated - doesn't have user context
+        // It's used by Program.cs for validation but will always return false now
+        // The proper validation should happen with user email context
+        _logger.LogWarning("HasApiKey called without user context for model: {Model}. This method is deprecated.", model);
+        return false;
     }
 
     public async Task<ChatCompletionResponse> GetChatCompletionAsync(
         ChatCompletionRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Routing chat completion request for model {Model}", request.Model);
+        if (string.IsNullOrEmpty(request.UserEmail))
+        {
+            throw new InvalidOperationException("UserEmail is required in ChatCompletionRequest");
+        }
         
-        var providerService = await _providerFactory.GetProviderServiceAsync(request.Model);
+        _logger.LogDebug("Routing chat completion request for model {Model} for user {UserEmail}", request.Model, request.UserEmail);
+        
+        var providerService = await _providerFactory.GetProviderServiceAsync(request.UserEmail, request.Model);
         return await providerService.GetChatCompletionAsync(request, cancellationToken);
     }
 
@@ -84,9 +74,14 @@ public class OpenAIService : IOpenAIService
         ChatCompletionRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Routing streaming chat completion request for model {Model}", request.Model);
+        if (string.IsNullOrEmpty(request.UserEmail))
+        {
+            throw new InvalidOperationException("UserEmail is required in ChatCompletionRequest");
+        }
         
-        var providerService = await _providerFactory.GetProviderServiceAsync(request.Model);
+        _logger.LogDebug("Routing streaming chat completion request for model {Model} for user {UserEmail}", request.Model, request.UserEmail);
+        
+        var providerService = await _providerFactory.GetProviderServiceAsync(request.UserEmail, request.Model);
         
         await foreach (var chunk in providerService.StreamChatCompletionAsync(request, cancellationToken))
         {
@@ -121,6 +116,7 @@ public class ChatCompletionRequest
     public double? PresencePenalty { get; set; }
     public double? FrequencyPenalty { get; set; }
     public bool? Stream { get; set; }
+    public string UserEmail { get; set; } = string.Empty; // Required for API key retrieval
 }
 
 public class ChatMessageDto

@@ -12,6 +12,8 @@ class DXOApp {
         this.reviewerCounter = 0; // Counter for generating unique IDs
         this.connectionState = 'disconnected'; // Track connection state
         this.dom = {}; // Cache for DOM element references
+        this.connectionPromise = null; // Promise for connection ready state
+        this.pendingSessionId = null; // Store sessionId if connection not ready
 
         this.init();
     }
@@ -22,6 +24,11 @@ class DXOApp {
         // Check for sessionId in URL and restore if present
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('sessionId');
+        
+        // Store sessionId for later if needed
+        if (sessionId) {
+            this.pendingSessionId = sessionId;
+        }
         
         this.setupSignalR();
         this.setupEventListeners();
@@ -36,17 +43,11 @@ class DXOApp {
         // Setup scroll buttons (floating top/bottom controls)
         this.setupScrollButtons();
         
-        // Restore session after everything is initialized
-        if (sessionId) {
-            // Wait for SignalR connection before restoring
-            if (this.connection.state === signalR.HubConnectionState.Connected) {
-                await this.restoreSession(sessionId);
-            } else {
-                // Wait for connection then restore
-                this.connection.onreconnected(async () => {
-                    await this.restoreSession(sessionId);
-                });
-            }
+        // Wait for connection to be ready before restoring session
+        if (this.pendingSessionId) {
+            await this.waitForConnection();
+            await this.restoreSession(this.pendingSessionId);
+            this.pendingSessionId = null;
         }
     }
 
@@ -441,17 +442,37 @@ Authoring rules:
             .configureLogging(signalR.LogLevel.Warning) // Reduce logging noise
             .build();
 
+        // Create a promise that resolves when connection is established
+        this.connectionPromise = new Promise((resolve, reject) => {
+            this.connection.start()
+                .then(() => {
+                    this.connectionState = 'connected';
+                    console.log('SignalR connected');
+                    this.updateConnectionStatus('connected');
+                    resolve();
+                })
+                .catch(err => {
+                    this.connectionState = 'disconnected';
+                    console.error('SignalR connection error:', err);
+                    this.showToast('Failed to connect to server', 'error');
+                    this.updateConnectionStatus('disconnected');
+                    reject(err);
+                });
+        });
+
         // Connection state handlers
         this.connection.onreconnecting((error) => {
             this.connectionState = 'reconnecting';
             console.warn('SignalR reconnecting...', error);
             this.showToast('Connection lost - Reconnecting...', 'warning');
+            this.updateConnectionStatus('reconnecting');
         });
 
         this.connection.onreconnected(async (connectionId) => {
             this.connectionState = 'connected';
             console.log('SignalR reconnected:', connectionId);
             this.showToast('Connection restored', 'success');
+            this.updateConnectionStatus('connected');
             
             // Rejoin session group if we have an active session
             if (this.currentSessionId) {
@@ -469,6 +490,10 @@ Authoring rules:
             this.connectionState = 'disconnected';
             console.error('SignalR connection closed:', error);
             this.showToast('Connection lost. Please refresh the page.', 'error');
+            this.updateConnectionStatus('disconnected');
+            
+            // Reset connection promise so it can be re-established
+            this.connectionPromise = null;
             
             // If session was running, update UI state
             if (this.isRunning) {
@@ -546,13 +571,78 @@ Authoring rules:
             this.showToast(`${persona} memory reset`, 'info');
         });
 
-        // Start connection
-        this.connection.start()
-            .then(() => console.log('SignalR connected'))
-            .catch(err => {
-                console.error('SignalR connection error:', err);
-                this.showToast('Failed to connect to server', 'error');
-            });
+    }
+
+    /**
+     * Wait for SignalR connection to be ready
+     * @returns {Promise} Resolves when connection is established
+     */
+    async waitForConnection() {
+        // If already connected, return immediately
+        if (this.connectionState === 'connected' && 
+            this.connection.state === signalR.HubConnectionState.Connected) {
+            return Promise.resolve();
+        }
+
+        // If connection promise exists, wait for it
+        if (this.connectionPromise) {
+            try {
+                await this.connectionPromise;
+                return;
+            } catch (error) {
+                throw new Error('Connection failed: ' + error.message);
+            }
+        }
+
+        // If no connection promise, try to reconnect
+        this.showToast('Establishing connection...', 'info');
+        try {
+            await this.connection.start();
+            this.connectionState = 'connected';
+            this.updateConnectionStatus('connected');
+        } catch (error) {
+            this.connectionState = 'disconnected';
+            this.updateConnectionStatus('disconnected');
+            throw new Error('Failed to establish connection: ' + error.message);
+        }
+    }
+
+    /**
+     * Update connection status indicator in UI
+     * @param {string} status - Connection status (connected, disconnecting, reconnecting, disconnected)
+     */
+    updateConnectionStatus(status) {
+        // Find or create status indicator
+        let statusIndicator = document.getElementById('connectionStatus');
+        if (!statusIndicator) {
+            statusIndicator = document.createElement('div');
+            statusIndicator.id = 'connectionStatus';
+            statusIndicator.className = 'connection-status';
+            
+            // Insert at top of page or in a suitable location
+            const container = document.querySelector('.container') || document.body;
+            container.insertBefore(statusIndicator, container.firstChild);
+        }
+
+        // Update status
+        statusIndicator.className = `connection-status connection-${status}`;
+        
+        const statusText = {
+            'connected': '● Connected',
+            'reconnecting': '⟳ Reconnecting...',
+            'disconnected': '○ Disconnected'
+        };
+        
+        statusIndicator.textContent = statusText[status] || status;
+        
+        // Auto-hide if connected after 3 seconds
+        if (status === 'connected') {
+            setTimeout(() => {
+                statusIndicator.classList.add('connection-status-hidden');
+            }, 3000);
+        } else {
+            statusIndicator.classList.remove('connection-status-hidden');
+        }
     }
 
     // Setup event listeners
@@ -725,6 +815,9 @@ Authoring rules:
         const request = this.buildSessionRequest();
 
         try {
+            // Ensure connection is ready before starting
+            await this.waitForConnection();
+
             // Create session
             const response = await fetch('/api/session/create', {
                 method: 'POST',
@@ -768,12 +861,15 @@ Authoring rules:
 
     // Step through one iteration
     async stepSession() {
-        if (!this.currentSessionId) {
-            // Need to create session first
-            await this.createSessionForStep();
-        }
-
         try {
+            // Ensure connection is ready
+            await this.waitForConnection();
+
+            if (!this.currentSessionId) {
+                // Need to create session first
+                await this.createSessionForStep();
+            }
+
             const response = await fetch(`/api/session/${this.currentSessionId}/step`, {
                 method: 'POST'
             });
@@ -793,6 +889,9 @@ Authoring rules:
     }
 
     async createSessionForStep() {
+        // Ensure connection is ready
+        await this.waitForConnection();
+
         const request = this.buildSessionRequest();
         request.runMode = 'Step';
 
@@ -1842,6 +1941,9 @@ Authoring rules:
         try {
             this.showToast('Restoring session...', 'info');
             
+            // Ensure connection is ready before restoring
+            await this.waitForConnection();
+            
             // Fetch session from server
             const response = await fetch(`/api/session/${sessionId}`);
             if (!response.ok) {
@@ -1879,10 +1981,8 @@ Authoring rules:
             // Load feedback rounds
             await this.loadFeedbackRounds();
             
-            // Rejoin SignalR group if connected
-            if (this.connection.state === signalR.HubConnectionState.Connected) {
-                await this.connection.invoke('JoinSession', sessionId);
-            }
+            // Rejoin SignalR group
+            await this.connection.invoke('JoinSession', sessionId);
             
             this.showToast('Session restored successfully', 'success');
             

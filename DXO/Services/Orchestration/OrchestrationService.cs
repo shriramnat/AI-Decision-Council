@@ -70,6 +70,11 @@ If and only if the draft is publication-ready and meets all your criteria with n
 
     public async Task<Session> CreateSessionAsync(CreateSessionRequest request, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(request.UserEmail))
+        {
+            throw new InvalidOperationException("UserEmail is required to create a session");
+        }
+
         var creatorConfig = new PersonaConfig
         {
             RootPrompt = request.CreatorRootPrompt ?? GetDefaultCreatorPrompt(),
@@ -121,6 +126,7 @@ If and only if the draft is publication-ready and meets all your criteria with n
         var session = new Session
         {
             Name = request.Name ?? "New Session",
+            UserEmail = request.UserEmail,
             MaxIterations = request.MaxIterations ?? _options.Orchestration.DefaultMaxIterations,
             StopMarker = request.StopMarker ?? _options.Orchestration.DefaultStopMarker,
             StopOnReviewerApproved = request.StopOnReviewerApproved ?? _options.Orchestration.StopOnReviewerApproved,
@@ -503,7 +509,8 @@ If and only if the draft is publication-ready and meets all your criteria with n
             MaxTokens = config.MaxOutputTokens,
             TopP = config.TopP,
             PresencePenalty = config.PresencePenalty,
-            FrequencyPenalty = config.FrequencyPenalty
+            FrequencyPenalty = config.FrequencyPenalty,
+            UserEmail = session.UserEmail
         };
 
         // Stream the response
@@ -556,7 +563,8 @@ If and only if the draft is publication-ready and meets all your criteria with n
             MaxTokens = reviewer.MaxOutputTokens,
             TopP = reviewer.TopP,
             PresencePenalty = reviewer.PresencePenalty,
-            FrequencyPenalty = reviewer.FrequencyPenalty
+            FrequencyPenalty = reviewer.FrequencyPenalty,
+            UserEmail = session.UserEmail
         };
 
         // Stream the response
@@ -972,6 +980,7 @@ Output format:
 public class CreateSessionRequest
 {
     public string? Name { get; set; }
+    public string UserEmail { get; set; } = string.Empty;
     public int? MaxIterations { get; set; }
     public string? StopMarker { get; set; }
     public bool? StopOnReviewerApproved { get; set; }

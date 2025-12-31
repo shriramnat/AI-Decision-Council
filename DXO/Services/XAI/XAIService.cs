@@ -48,24 +48,24 @@ public class XAIService : IXAIService
 
     public bool HasApiKey(string? model = null)
     {
-        if (string.IsNullOrEmpty(model))
-        {
-            return false;
-        }
-
-        // Check if model has configuration with API key
-        var config = _modelManagementService.GetModelConfigurationAsync(model).Result;
-        return config != null && !string.IsNullOrWhiteSpace(config.ApiKey);
+        // This method is deprecated - doesn't have user context
+        _logger.LogWarning("HasApiKey called without user context for model: {Model}", model);
+        return false;
     }
 
     public async Task<ChatCompletionResponse> GetChatCompletionAsync(
         ChatCompletionRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Sending chat completion request to xAI model {Model}", request.Model);
+        if (string.IsNullOrEmpty(request.UserEmail))
+        {
+            throw new InvalidOperationException("UserEmail is required for API key retrieval");
+        }
+
+        _logger.LogDebug("Sending chat completion request to xAI model {Model} for user {UserEmail}", request.Model, request.UserEmail);
 
         // Get model configuration from ModelManagementService
-        var config = await _modelManagementService.GetModelConfigurationAsync(request.Model);
+        var config = await _modelManagementService.GetModelConfigurationAsync(request.UserEmail, request.Model);
         if (config == null || string.IsNullOrWhiteSpace(config.ApiKey))
         {
             throw new XAIException($"xAI model '{request.Model}' is not properly configured. Please set API key in Settings.");
@@ -202,10 +202,15 @@ public class XAIService : IXAIService
         ChatCompletionRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("[XAI] Starting streaming chat completion request to xAI model {Model}", request.Model);
+        if (string.IsNullOrEmpty(request.UserEmail))
+        {
+            throw new InvalidOperationException("UserEmail is required for API key retrieval");
+        }
+
+        _logger.LogInformation("[XAI] Starting streaming chat completion request to xAI model {Model} for user {UserEmail}", request.Model, request.UserEmail);
 
         // Get model configuration from ModelManagementService
-        var config = await _modelManagementService.GetModelConfigurationAsync(request.Model);
+        var config = await _modelManagementService.GetModelConfigurationAsync(request.UserEmail, request.Model);
         if (config == null || string.IsNullOrWhiteSpace(config.ApiKey))
         {
             throw new XAIException($"xAI model '{request.Model}' is not properly configured. Please set API key in Settings.");

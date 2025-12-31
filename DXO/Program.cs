@@ -1,7 +1,9 @@
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
@@ -20,6 +22,7 @@ using DXO.Services.XAI;
 using DXO.Services.OpenAI;
 using DXO.Services.Orchestration;
 using DXO.Services.Models;
+using DXO.Services.Security;
 using Polly;
 using Polly.Extensions.Http;
 
@@ -50,6 +53,15 @@ else
 // Add HttpClientFactory for general HTTP calls (used by DeepSeek)
 builder.Services.AddHttpClient();
 
+// Configure Data Protection for API key encryption
+var keysPath = Path.Combine(Directory.GetCurrentDirectory(), "keys");
+Directory.CreateDirectory(keysPath);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+    .SetApplicationName("DXO")
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
+
 // Configure HttpClient for OpenAI with retry policy
 // Note: BaseUrl and Authorization will be set per-request since models may have different endpoints
 builder.Services.AddHttpClient("OpenAI", client =>
@@ -61,6 +73,7 @@ builder.Services.AddHttpClient("OpenAI", client =>
 .AddPolicyHandler(GetRetryPolicy(dxoConfig.MaxRetries));
 
 // Register services
+builder.Services.AddSingleton<IApiKeyEncryptionService, ApiKeyEncryptionService>();
 builder.Services.AddSingleton<IModelManagementService, ModelManagementService>();
 builder.Services.AddSingleton<IModelProviderFactory, ModelProviderFactory>();
 builder.Services.AddSingleton<IAzureAIFoundryService, AzureAIFoundryService>();
@@ -307,8 +320,13 @@ app.MapRazorPages();
 app.MapHub<DxoHub>("/hubs/dxo");
 
 // Map API endpoints
-app.MapPost("/api/session/create", async (CreateSessionRequest request, IOrchestrationService orchestration, CancellationToken ct) =>
+app.MapPost("/api/session/create", async (HttpContext httpContext, CreateSessionRequest request, IOrchestrationService orchestration, CancellationToken ct) =>
 {
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    request.UserEmail = userEmail;
     var session = await orchestration.CreateSessionAsync(request, ct);
     return Results.Ok(session);
 });
@@ -325,10 +343,14 @@ app.MapGet("/api/sessions", async (IOrchestrationService orchestration, Cancella
     return Results.Ok(sessions);
 });
 
-app.MapPost("/api/session/{id:guid}/start", async (Guid id, IOrchestrationService orchestration, IOpenAIService openAIService, CancellationToken ct) =>
+app.MapPost("/api/session/{id:guid}/start", async (HttpContext httpContext, Guid id, IOrchestrationService orchestration, IModelManagementService modelService, CancellationToken ct) =>
 {
     try
     {
+        var userEmail = GetUserEmail(httpContext);
+        if (userEmail == null)
+            return Results.Unauthorized();
+
         var session = await orchestration.GetSessionAsync(id, ct);
         if (session == null)
             return Results.NotFound();
@@ -355,8 +377,17 @@ app.MapPost("/api/session/{id:guid}/start", async (Guid id, IOrchestrationServic
             return Results.BadRequest(new { error = $"Unable to parse session configuration: {ex.Message}" });
         }
 
-        // Validate keys only for used models
-        var missing = models.Where(m => !openAIService.HasApiKey(m)).ToList();
+        // Validate keys for used models with user context
+        var missing = new List<string>();
+        foreach (var modelName in models)
+        {
+            var config = await modelService.GetModelConfigurationAsync(userEmail, modelName);
+            if (config == null || string.IsNullOrWhiteSpace(config.ApiKey))
+            {
+                missing.Add(modelName);
+            }
+        }
+        
         if (missing.Any())
         {
             return Results.BadRequest(new
@@ -374,10 +405,14 @@ app.MapPost("/api/session/{id:guid}/start", async (Guid id, IOrchestrationServic
     }
 });
 
-app.MapPost("/api/session/{id:guid}/step", async (Guid id, IOrchestrationService orchestration, IOpenAIService openAIService, CancellationToken ct) =>
+app.MapPost("/api/session/{id:guid}/step", async (HttpContext httpContext, Guid id, IOrchestrationService orchestration, IModelManagementService modelService, CancellationToken ct) =>
 {
     try
     {
+        var userEmail = GetUserEmail(httpContext);
+        if (userEmail == null)
+            return Results.Unauthorized();
+
         var session = await orchestration.GetSessionAsync(id, ct);
         if (session == null)
             return Results.NotFound();
@@ -404,8 +439,17 @@ app.MapPost("/api/session/{id:guid}/step", async (Guid id, IOrchestrationService
             return Results.BadRequest(new { error = $"Unable to parse session configuration: {ex.Message}" });
         }
 
-        // Validate keys only for used models
-        var missing = models.Where(m => !openAIService.HasApiKey(m)).ToList();
+        // Validate keys for used models with user context
+        var missing = new List<string>();
+        foreach (var modelName in models)
+        {
+            var config = await modelService.GetModelConfigurationAsync(userEmail, modelName);
+            if (config == null || string.IsNullOrWhiteSpace(config.ApiKey))
+            {
+                missing.Add(modelName);
+            }
+        }
+        
         if (missing.Any())
         {
             return Results.BadRequest(new
@@ -486,7 +530,7 @@ app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, DXO.Models.Submit
     }
 });
 
-app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, IterateWithFeedbackRequest? request, IOrchestrationService orchestration, IOpenAIService openAIService, CancellationToken ct) =>
+app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (HttpContext httpContext, Guid id, IterateWithFeedbackRequest? request, IOrchestrationService orchestration, IModelManagementService modelService, CancellationToken ct) =>
 {
     if (request == null)
     {
@@ -505,6 +549,10 @@ app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, Iter
     
     try
     {
+        var userEmail = GetUserEmail(httpContext);
+        if (userEmail == null)
+            return Results.Unauthorized();
+
         var session = await orchestration.GetSessionAsync(id, ct);
         if (session == null)
             return Results.NotFound(new { error = "Session not found" });
@@ -535,8 +583,17 @@ app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, Iter
             return Results.BadRequest(new { error = $"Unable to parse session configuration: {ex.Message}" });
         }
 
-        // Validate API keys for used models
-        var missing = models.Where(m => !openAIService.HasApiKey(m)).ToList();
+        // Validate API keys for used models with user context
+        var missing = new List<string>();
+        foreach (var modelName in models)
+        {
+            var config = await modelService.GetModelConfigurationAsync(userEmail, modelName);
+            if (config == null || string.IsNullOrWhiteSpace(config.ApiKey))
+            {
+                missing.Add(modelName);
+            }
+        }
+        
         if (missing.Any())
         {
             return Results.BadRequest(new
@@ -565,10 +622,14 @@ app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, Iter
     }
 });
 
-app.MapGet("/api/config", async (IOptions<DxoOptions> options, IModelManagementService modelService) =>
+app.MapGet("/api/config", async (HttpContext httpContext, IOptions<DxoOptions> options, IModelManagementService modelService) =>
 {
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
     var config = options.Value;
-    var models = await modelService.GetAllModelsAsync();
+    var models = await modelService.GetAllModelsAsync(userEmail);
     var modelNames = models.Select(m => m.ModelName).ToList();
     
     return Results.Ok(new
@@ -584,21 +645,33 @@ app.MapGet("/api/config", async (IOptions<DxoOptions> options, IModelManagementS
 });
 
 // Model Management API endpoints
-app.MapGet("/api/models", async (IModelManagementService modelService, CancellationToken ct) =>
+app.MapGet("/api/models", async (HttpContext httpContext, IModelManagementService modelService, CancellationToken ct) =>
 {
-    var models = await modelService.GetAllModelsAsync();
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    var models = await modelService.GetAllModelsAsync(userEmail);
     return Results.Ok(models);
 });
 
-app.MapGet("/api/models/{id:int}", async (int id, IModelManagementService modelService, CancellationToken ct) =>
+app.MapGet("/api/models/{id:int}", async (HttpContext httpContext, int id, IModelManagementService modelService, CancellationToken ct) =>
 {
-    var models = await modelService.GetAllModelsAsync();
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    var models = await modelService.GetAllModelsAsync(userEmail);
     var model = models.FirstOrDefault(m => m.Id == id);
     return model != null ? Results.Ok(model) : Results.NotFound();
 });
 
-app.MapPost("/api/models", async (AddModelRequest request, IModelManagementService modelService, CancellationToken ct) =>
+app.MapPost("/api/models", async (HttpContext httpContext, AddModelRequest request, IModelManagementService modelService, CancellationToken ct) =>
 {
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
     try
     {
         // Support both Provider (new) and IsAzureModel (legacy) for backward compatibility
@@ -607,17 +680,13 @@ app.MapPost("/api/models", async (AddModelRequest request, IModelManagementServi
             : (request.IsAzureModel ? ModelProvider.Azure : ModelProvider.OpenAI);
         
         var model = await modelService.AddModelAsync(
+            userEmail,
             request.ModelName,
             request.Endpoint,
             provider,
+            request.ApiKey,
             request.DisplayName
         );
-
-        // Set API key if provided
-        if (!string.IsNullOrWhiteSpace(request.ApiKey))
-        {
-            modelService.SetApiKeyForModel(request.ModelName, request.ApiKey);
-        }
 
         return Results.Ok(model);
     }
@@ -627,9 +696,14 @@ app.MapPost("/api/models", async (AddModelRequest request, IModelManagementServi
     }
 });
 
-app.MapPut("/api/models/{id:int}", async (int id, UpdateModelRequest request, IModelManagementService modelService, ILogger<Program> logger, CancellationToken ct) =>
+app.MapPut("/api/models/{id:int}", async (HttpContext httpContext, int id, UpdateModelRequest request, IModelManagementService modelService, ILogger<Program> logger, CancellationToken ct) =>
 {
-    logger.LogInformation($"[API] PUT /api/models/{id} called. ModelName: '{request.ModelName}', HasApiKey: {!string.IsNullOrWhiteSpace(request.ApiKey)}");
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    logger.LogInformation("[API] PUT /api/models/{Id} called for user {UserEmail}. ModelName: '{ModelName}', HasApiKey: {HasApiKey}", 
+        id, userEmail, request.ModelName, !string.IsNullOrWhiteSpace(request.ApiKey));
     
     try
     {
@@ -639,51 +713,47 @@ app.MapPut("/api/models/{id:int}", async (int id, UpdateModelRequest request, IM
             : (request.IsAzureModel ? ModelProvider.Azure : ModelProvider.OpenAI);
         
         var model = await modelService.UpdateModelAsync(
+            userEmail,
             id,
             request.ModelName,
             request.Endpoint,
             provider,
+            request.ApiKey,
             request.DisplayName
         );
 
-        logger.LogInformation($"[API] Model updated successfully. ID: {model.Id}, Name: '{model.ModelName}'");
-
-        // Set API key if provided
-        if (!string.IsNullOrWhiteSpace(request.ApiKey))
-        {
-            logger.LogInformation($"[API] Setting API key for model '{request.ModelName}' (length: {request.ApiKey.Length})");
-            modelService.SetApiKeyForModel(request.ModelName, request.ApiKey);
-        }
-        else
-        {
-            logger.LogInformation($"[API] No API key provided in request for model '{request.ModelName}'");
-        }
+        logger.LogInformation("[API] Model updated successfully. ID: {Id}, Name: '{ModelName}' for user {UserEmail}", 
+            model.Id, model.ModelName, userEmail);
 
         return Results.Ok(model);
     }
     catch (InvalidOperationException ex)
     {
-        logger.LogError($"[API] Failed to update model: {ex.Message}");
+        logger.LogError("[API] Failed to update model for user {UserEmail}: {Error}", userEmail, ex.Message);
         return Results.BadRequest(new { error = ex.Message });
     }
 });
 
-app.MapDelete("/api/models/{id:int}", async (int id, IModelManagementService modelService, CancellationToken ct) =>
+app.MapDelete("/api/models/{id:int}", async (HttpContext httpContext, int id, IModelManagementService modelService, CancellationToken ct) =>
 {
-    var deleted = await modelService.DeleteModelAsync(id);
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    var deleted = await modelService.DeleteModelAsync(userEmail, id);
     return deleted ? Results.Ok(new { success = true }) : Results.NotFound();
 });
 
-app.MapPost("/api/models/api-keys", (Dictionary<string, string> apiKeys, IModelManagementService modelService) =>
-{
-    foreach (var kvp in apiKeys)
-    {
-        modelService.SetApiKeyForModel(kvp.Key, kvp.Value);
-    }
-    return Results.Ok(new { success = true, count = apiKeys.Count });
-});
-
 app.Run();
+
+// Helper method to extract user email from claims
+static string? GetUserEmail(HttpContext context)
+{
+    return context.User.FindFirst(ClaimTypes.Email)?.Value 
+        ?? context.User.FindFirst("preferred_username")?.Value 
+        ?? context.User.FindFirst("email")?.Value
+        ?? context.User.FindFirst(ClaimTypes.Name)?.Value;
+}
 
 // Retry policy for transient HTTP errors
 static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int maxRetries)

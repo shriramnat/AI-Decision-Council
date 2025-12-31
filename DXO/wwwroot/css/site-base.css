@@ -1480,6 +1480,61 @@ a:active {
     }
 }
 
+/* Connection Status Indicator */
+.connection-status {
+    position: fixed;
+    top: 4.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 1002;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.connection-status.connection-status-hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+    pointer-events: none;
+}
+
+.connection-status.connection-connected {
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.connection-status.connection-reconnecting {
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+    animation: pulse-border 1.5s infinite;
+}
+
+.connection-status.connection-disconnected {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: var(--warning-color);
+        opacity: 1;
+    }
+    50% {
+        border-color: rgba(251, 191, 36, 0.5);
+        opacity: 0.8;
+    }
+}
+
 /* Toast notifications */
 .toast-container {
     position: fixed;

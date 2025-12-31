@@ -114,3 +114,8 @@ certificates/
 *.key
 *.cer
 *.crt
+
+# Data Protection API keys - NEVER commit these
+# Contains encryption keys for API keys and other sensitive data
+keys/
+*.xml

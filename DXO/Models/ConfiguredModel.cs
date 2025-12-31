@@ -28,6 +28,16 @@ public class ConfiguredModel
     public ModelProvider Provider { get; set; } = ModelProvider.OpenAI;
     
     /// <summary>
+    /// The encrypted API key for this model (encrypted using Data Protection API)
+    /// </summary>
+    public string? ApiKey { get; set; }
+    
+    /// <summary>
+    /// The email address of the user who owns this model configuration
+    /// </summary>
+    public string UserEmail { get; set; } = string.Empty;
+    
+    /// <summary>
     /// [DEPRECATED] Use Provider instead. Kept for backward compatibility during migration.
     /// Whether this is an Azure-hosted model (uses different API format)
     /// </summary>

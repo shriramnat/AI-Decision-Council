@@ -59,7 +59,13 @@ public class DxoDbContext : DbContext
             entity.Property(e => e.ModelName).IsRequired().HasMaxLength(100);
             entity.Property(e => e.DisplayName).HasMaxLength(200);
             entity.Property(e => e.Endpoint).IsRequired().HasMaxLength(500);
-            entity.HasIndex(e => e.ModelName).IsUnique();
+            entity.Property(e => e.ApiKey).HasMaxLength(1000); // Encrypted keys are longer
+            entity.Property(e => e.UserEmail).IsRequired().HasMaxLength(200);
+            
+            // Remove unique constraint on ModelName alone - multiple users can have same model name
+            // Add composite unique index on UserEmail + ModelName
+            entity.HasIndex(e => new { e.UserEmail, e.ModelName }).IsUnique();
+            entity.HasIndex(e => e.UserEmail); // For efficient user filtering
             entity.HasIndex(e => e.CreatedAt);
         });
 

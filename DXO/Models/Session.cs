@@ -15,6 +15,10 @@ public class Session
     [MaxLength(200)]
     public string Name { get; set; } = "New Session";
 
+    [Required]
+    [MaxLength(255)]
+    public string UserEmail { get; set; } = string.Empty;
+
     public SessionStatus Status { get; set; } = SessionStatus.Created;
 
     public StopReason StopReason { get; set; } = StopReason.None;

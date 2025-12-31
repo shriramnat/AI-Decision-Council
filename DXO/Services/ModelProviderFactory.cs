@@ -14,7 +14,7 @@ public interface IModelProviderFactory
     /// <summary>
     /// Gets the appropriate provider service for the specified model
     /// </summary>
-    Task<IModelProviderService> GetProviderServiceAsync(string modelName);
+    Task<IModelProviderService> GetProviderServiceAsync(string userEmail, string modelName);
     
     /// <summary>
     /// Gets the provider service for a specific provider type
@@ -38,21 +38,21 @@ public class ModelProviderFactory : IModelProviderFactory
         _logger = logger;
     }
 
-    public async Task<IModelProviderService> GetProviderServiceAsync(string modelName)
+    public async Task<IModelProviderService> GetProviderServiceAsync(string userEmail, string modelName)
     {
-        var config = await _modelManagementService.GetModelConfigurationAsync(modelName);
+        var config = await _modelManagementService.GetModelConfigurationAsync(userEmail, modelName);
         if (config == null)
         {
             throw new InvalidOperationException($"Model '{modelName}' is not configured. Please add it in Settings.");
         }
 
-        var model = await _modelManagementService.GetModelByNameAsync(modelName);
+        var model = await _modelManagementService.GetModelByNameAsync(userEmail, modelName);
         if (model == null)
         {
             throw new InvalidOperationException($"Model '{modelName}' not found.");
         }
 
-        _logger.LogDebug("Routing model '{ModelName}' to provider '{Provider}'", modelName, model.Provider);
+        _logger.LogDebug("Routing model '{ModelName}' for user '{UserEmail}' to provider '{Provider}'", modelName, userEmail, model.Provider);
         
         return GetProviderService(model.Provider);
     }
@@ -97,18 +97,23 @@ public class OpenAIProviderService : IModelProviderService
 
     public bool HasApiKey(string model)
     {
-        Console.WriteLine($"[OpenAIProviderService] HasApiKey called for model: {model}");
-        var config = _modelManagementService.GetModelConfigurationAsync(model).Result;
-        var hasKey = config != null && !string.IsNullOrWhiteSpace(config.ApiKey);
-        Console.WriteLine($"[OpenAIProviderService] Config found: {config != null}, Has API key: {hasKey}");
-        return hasKey;
+        // Note: This method doesn't have user context, so it's deprecated
+        // Use the service methods that accept userEmail instead
+        _logger.LogWarning("HasApiKey called without user context for model: {Model}", model);
+        return false;
     }
 
     public async Task<ChatCompletionResponse> GetChatCompletionAsync(
         ChatCompletionRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _modelManagementService.GetModelConfigurationAsync(request.Model);
+        // Extract user email from request context - this should be set by the caller
+        if (string.IsNullOrEmpty(request.UserEmail))
+        {
+            throw new InvalidOperationException("UserEmail is required for API key retrieval");
+        }
+        
+        var config = await _modelManagementService.GetModelConfigurationAsync(request.UserEmail, request.Model);
         if (config == null || string.IsNullOrWhiteSpace(config.ApiKey))
         {
             throw new OpenAIException($"Model '{request.Model}' is not configured or missing API key.");
@@ -162,7 +167,13 @@ public class OpenAIProviderService : IModelProviderService
         ChatCompletionRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var config = await _modelManagementService.GetModelConfigurationAsync(request.Model);
+        // Extract user email from request context
+        if (string.IsNullOrEmpty(request.UserEmail))
+        {
+            throw new InvalidOperationException("UserEmail is required for API key retrieval");
+        }
+        
+        var config = await _modelManagementService.GetModelConfigurationAsync(request.UserEmail, request.Model);
         if (config == null || string.IsNullOrWhiteSpace(config.ApiKey))
         {
             throw new OpenAIException($"Model '{request.Model}' is not configured or missing API key.");
