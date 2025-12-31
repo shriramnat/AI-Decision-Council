@@ -11,6 +11,7 @@ class DXOApp {
         this.reviewers = []; // Dynamic reviewers array
         this.reviewerCounter = 0; // Counter for generating unique IDs
         this.connectionState = 'disconnected'; // Track connection state
+        this.dom = {}; // Cache for DOM element references
 
         this.init();
     }
@@ -26,6 +27,10 @@ class DXOApp {
         this.setupEventListeners();
         await this.loadDefaultPrompts(); // Load prompts from agentconfigurations.json
         this.createToastContainer();
+        
+        // Cache DOM elements after toast container is created
+        this.cacheDOMElements();
+        
         this.addDefaultReviewer(); // Add one default reviewer
 
         // Setup scroll buttons (floating top/bottom controls)
@@ -45,6 +50,102 @@ class DXOApp {
         }
     }
 
+    /**
+     * Cache frequently accessed DOM elements for performance
+     */
+    cacheDOMElements() {
+        this.dom = {
+            // Session elements
+            sessionId: document.getElementById('sessionId'),
+            sessionStatus: document.getElementById('sessionStatus'),
+            sessionTopic: document.getElementById('sessionTopic'),
+            iterationCount: document.getElementById('iterationCount'),
+            sessionName: document.getElementById('sessionName'),
+            maxIterations: document.getElementById('maxIterations'),
+            stopMarker: document.getElementById('stopMarker'),
+            stopOnApproved: document.getElementById('stopOnApproved'),
+            runMode: document.getElementById('runMode'),
+            
+            // Output elements
+            finalOutput: document.getElementById('finalOutput'),
+            finalOutputContainer: document.getElementById('finalOutputContainer'),
+            
+            // Button elements
+            btnStart: document.getElementById('btnStart'),
+            btnStep: document.getElementById('btnStep'),
+            btnStop: document.getElementById('btnStop'),
+            btnReset: document.getElementById('btnReset'),
+            btnSessionSettings: document.getElementById('btnSessionSettings'),
+            btnDownloadOutput: document.getElementById('btnDownloadOutput'),
+            btnCopyOutput: document.getElementById('btnCopyOutput'),
+            btnIterateWithFeedback: document.getElementById('btnIterateWithFeedback'),
+            
+            // Modal elements
+            exportModal: document.getElementById('exportModal'),
+            exportModalTitle: document.getElementById('exportModalTitle'),
+            btnExportOption1: document.getElementById('btnExportOption1'),
+            btnExportOption2: document.getElementById('btnExportOption2'),
+            feedbackModal: document.getElementById('feedbackModal'),
+            
+            // Viewer elements
+            traceViewer: document.getElementById('traceViewer'),
+            
+            // Creator elements
+            creatorPrompt: document.getElementById('creatorPrompt'),
+            creatorModel: document.getElementById('creatorModel'),
+            creatorTemp: document.getElementById('creatorTemp'),
+            creatorMaxTokens: document.getElementById('creatorMaxTokens'),
+            creatorTopP: document.getElementById('creatorTopP'),
+            creatorPresencePenalty: document.getElementById('creatorPresencePenalty'),
+            creatorFrequencyPenalty: document.getElementById('creatorFrequencyPenalty'),
+            
+            // Container elements
+            reviewerCardsContainer: document.getElementById('reviewerCardsContainer')
+        };
+    }
+
+    /**
+     * Render markdown content to a container, with fallback to plain text
+     * @param {HTMLElement} container - Target container element
+     * @param {string} content - Markdown or plain text content
+     * @returns {boolean} - Success status
+     */
+    renderMarkdown(container, content) {
+        if (!container) {
+            console.warn('renderMarkdown: container is null');
+            return false;
+        }
+        
+        if (!content) {
+            container.textContent = '';
+            return true;
+        }
+        
+        if (typeof marked !== 'undefined') {
+            try {
+                container.innerHTML = marked.parse(content);
+                return true;
+            } catch (e) {
+                console.error('Markdown parse error:', e);
+                container.textContent = content;
+                return false;
+            }
+        } else {
+            container.textContent = content;
+            return true;
+        }
+    }
+
+    /**
+     * Format session ID for display (truncated with ellipsis)
+     * @param {string} sessionId - Full session ID
+     * @returns {string} - Formatted session ID
+     */
+    formatSessionId(sessionId) {
+        if (!sessionId) return '-';
+        return sessionId.substring(0, 8) + '...';
+    }
+
     // Load configuration from server
     async loadConfig() {
         try {
@@ -59,23 +160,24 @@ class DXOApp {
 
     // Populate model dropdowns with available models
     populateModelDropdowns() {
-        const creatorSelect = document.getElementById('creatorModel');
-
         if (!this.config?.allowedModels) return;
 
+        const creatorModel = document.getElementById('creatorModel');
+        if (!creatorModel) return;
+
         // Clear existing options first to prevent duplicates
-        creatorSelect.innerHTML = '';
+        creatorModel.innerHTML = '';
 
         // Populate creator model dropdown
         this.config.allowedModels.forEach(model => {
             const option = new Option(model, model);
-            creatorSelect.add(option);
+            creatorModel.add(option);
         });
 
-        creatorSelect.value = this.config.defaultModelCreator;
+        creatorModel.value = this.config.defaultModelCreator;
 
         // Add change event listener to handle xAI model selection
-        creatorSelect.addEventListener('change', () => this.handleCreatorModelChange());
+        creatorModel.addEventListener('change', () => this.handleCreatorModelChange());
 
         // Initial state check
         this.handleCreatorModelChange();
@@ -303,10 +405,13 @@ If and only if the draft is publication-ready from your perspective, include the
             const config = await response.json();
             const creatorConfig = config.agents?.creator;
 
+            const creatorPrompt = document.getElementById('creatorPrompt');
+            if (!creatorPrompt) return;
+
             if (creatorConfig && creatorConfig.prompt) {
                 // Format the prompt by replacing \n with actual line breaks
                 const formattedPrompt = creatorConfig.prompt.replace(/\\n/g, '\n');
-                document.getElementById('creatorPrompt').value = formattedPrompt;
+                creatorPrompt.value = formattedPrompt;
             } else {
                 // Fallback to default prompt if not found in JSON
                 console.warn('Creator prompt not found in agentconfigurations.json, using fallback');
@@ -320,7 +425,7 @@ Authoring rules:
 5) Maintain internal consistency across sections.
 6) Incorporate feedback from ALL reviewers explicitly.
 7) When complete (after ALL reviewers approve), output: FINAL: followed by the final content.`;
-                document.getElementById('creatorPrompt').value = fallbackPrompt;
+                creatorPrompt.value = fallbackPrompt;
             }
         } catch (error) {
             console.error('Failed to load default prompts:', error);
@@ -393,26 +498,13 @@ Authoring rules:
         this.connection.on('SessionCompleted', (sessionId, finalContent, stopReason) => {
             this.updateStatus('Completed');
             this.isRunning = false;
-            this.updateButtonStates();
-            this.updateFeedbackButtonVisibility('Completed');
+            this.updateUIState();
 
-            // Popuplated hidden textarea for copy/download/forms
-            document.getElementById('finalOutput').value = finalContent;
+            // Populate hidden textarea for copy/download/forms
+            this.dom.finalOutput.value = finalContent;
 
-            // Render Markdown in the new container
-            const container = document.getElementById('finalOutputContainer');
-            if (container) {
-                if (typeof marked !== 'undefined') {
-                    container.innerHTML = marked.parse(finalContent);
-                } else {
-                    container.textContent = finalContent;
-                }
-                // Ensure text color is appropriate by removing any specific styling if needed, 
-                // though css class 'markdown-body' usually handles it.
-            }
-
-            // Enable download button when output is available
-            this.updateOutputButtonStates();
+            // Render Markdown in the new container using utility method
+            this.renderMarkdown(this.dom.finalOutputContainer, finalContent);
 
             this.showToast(`Session completed: ${stopReason}`, 'success');
             this.loadFeedbackRounds(); // Load feedback rounds when session completes
@@ -818,12 +910,31 @@ Authoring rules:
         };
     }
 
-    // Update button states based on running state
+    /**
+     * Comprehensive UI state update
+     * Call this after any state change to ensure UI consistency
+     */
+    updateUIState() {
+        // Session control buttons
+        this.dom.btnStart.disabled = this.isRunning;
+        this.dom.btnStep.disabled = this.isRunning;
+        this.dom.btnStop.disabled = !this.isRunning;
+        this.dom.btnSessionSettings.disabled = this.isRunning;
+        
+        // Output buttons
+        const hasOutput = this.dom.finalOutput.value.trim().length > 0;
+        this.dom.btnDownloadOutput.disabled = !hasOutput;
+        this.dom.btnCopyOutput.disabled = false; // Always enabled (shows warning if no output)
+        
+        // Feedback button
+        const status = this.dom.sessionStatus.textContent;
+        this.dom.btnIterateWithFeedback.style.display = 
+            status === 'Completed' ? 'inline-block' : 'none';
+    }
+
+    // Update button states based on running state - wrapper for updateUIState
     updateButtonStates() {
-        document.getElementById('btnStart').disabled = this.isRunning;
-        document.getElementById('btnStep').disabled = this.isRunning;
-        document.getElementById('btnStop').disabled = !this.isRunning;
-        document.getElementById('btnSessionSettings').disabled = this.isRunning;
+        this.updateUIState();
     }
 
     // Update status display
@@ -1000,7 +1111,7 @@ Authoring rules:
 
     // Copy final output
     copyOutput() {
-        const output = document.getElementById('finalOutput').value;
+        const output = this.dom.finalOutput.value;
         if (output) {
             navigator.clipboard.writeText(output)
                 .then(() => this.showToast('Copied to clipboard', 'success'))
@@ -1010,52 +1121,65 @@ Authoring rules:
         }
     }
 
-    // Download output
-    downloadOutput(format) {
-        const output = document.getElementById('finalOutput').value;
-        if (!output) {
-            this.showToast('No output to download', 'warning');
-            this.closeExportModal();
-            return;
+    /**
+     * Generic export handler for output and transcript downloads
+     * @param {string} exportType - 'output' or 'transcript'
+     * @param {string} format - File format (md, txt, json)
+     */
+    handleExport(exportType, format) {
+        let content, filename, contentType = 'text/plain';
+        
+        // Get content based on export type
+        if (exportType === 'output') {
+            content = this.dom.finalOutput.value;
+            if (!content) {
+                this.showToast('No output to download', 'warning');
+                this.closeExportModal();
+                return;
+            }
+            filename = `dxo-output-${Date.now()}.${format}`;
+            
+        } else if (exportType === 'transcript') {
+            if (this.messages.length === 0) {
+                this.showToast('No transcript to export', 'warning');
+                this.closeExportModal();
+                return;
+            }
+            
+            if (format === 'json') {
+                content = JSON.stringify({
+                    sessionId: this.currentSessionId,
+                    exportedAt: new Date().toISOString(),
+                    messages: this.messages
+                }, null, 2);
+                filename = `dxo-transcript-${Date.now()}.json`;
+            } else {
+                content = this.messages.map(m => {
+                    const card = document.getElementById(`msg-${m.messageId}`);
+                    const persona = card?.querySelector('.message-persona')?.textContent || 'Unknown';
+                    return `## ${persona}\n\n${m.content}\n\n---\n`;
+                }).join('\n');
+                filename = `dxo-transcript-${Date.now()}.md`;
+            }
         }
-
-        const filename = `dxo-output-${Date.now()}.${format}`;
-        const blob = new Blob([output], { type: 'text/plain' });
+        
+        // Download
+        const blob = new Blob([content], { type: contentType });
         this.downloadBlob(blob, filename);
         this.closeExportModal();
-        this.showToast('Output downloaded', 'success');
+        
+        const successMsg = exportType === 'output' ? 'Output downloaded' : 'Transcript exported';
+        this.showToast(successMsg, 'success');
     }
 
-    // Export transcript
+    // Download output - wrapper for unified export handler
+    downloadOutput(format) {
+        this.handleExport('output', format);
+    }
+
+    // Export transcript - wrapper for unified export handler
     exportTranscript(format) {
-        if (this.messages.length === 0) {
-            this.showToast('No transcript to export', 'warning');
-            this.closeExportModal();
-            return;
-        }
-
-        let content, filename;
-
-        if (format === 'json') {
-            content = JSON.stringify({
-                sessionId: this.currentSessionId,
-                exportedAt: new Date().toISOString(),
-                messages: this.messages
-            }, null, 2);
-            filename = `dxo-transcript-${Date.now()}.json`;
-        } else {
-            content = this.messages.map(m => {
-                const card = document.getElementById(`msg-${m.messageId}`);
-                const persona = card?.querySelector('.message-persona')?.textContent || 'Unknown';
-                return `## ${persona}\n\n${m.content}\n\n---\n`;
-            }).join('\n');
-            filename = `dxo-transcript-${Date.now()}.md`;
-        }
-
-        const blob = new Blob([content], { type: 'text/plain' });
-        this.downloadBlob(blob, filename);
-        this.closeExportModal();
-        this.showToast('Transcript exported', 'success');
+        this.handleExport('transcript', format);
     }
 
     // Download blob as file
@@ -1717,20 +1841,12 @@ Authoring rules:
             
             // Restore final output if exists
             if (session.finalOutput) {
-                document.getElementById('finalOutput').value = session.finalOutput;
+                this.dom.finalOutput.value = session.finalOutput;
                 
-                // Render markdown
-                const container = document.getElementById('finalOutputContainer');
-                if (container) {
-                    if (typeof marked !== 'undefined') {
-                        container.innerHTML = marked.parse(session.finalOutput);
-                    } else {
-                        container.textContent = session.finalOutput;
-                    }
-                }
+                // Render markdown using utility method
+                this.renderMarkdown(this.dom.finalOutputContainer, session.finalOutput);
                 
-                this.updateOutputButtonStates();
-                this.updateFeedbackButtonVisibility(session.status);
+                this.updateUIState();
             }
             
             // Load feedback rounds
