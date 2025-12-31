@@ -10,12 +10,18 @@ class DXOApp {
         this.currentStreamingMessage = null;
         this.reviewers = []; // Dynamic reviewers array
         this.reviewerCounter = 0; // Counter for generating unique IDs
+        this.connectionState = 'disconnected'; // Track connection state
 
         this.init();
     }
 
     async init() {
         await this.loadConfig();
+        
+        // Check for sessionId in URL and restore if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('sessionId');
+        
         this.setupSignalR();
         this.setupEventListeners();
         await this.loadDefaultPrompts(); // Load prompts from agentconfigurations.json
@@ -24,6 +30,19 @@ class DXOApp {
 
         // Setup scroll buttons (floating top/bottom controls)
         this.setupScrollButtons();
+        
+        // Restore session after everything is initialized
+        if (sessionId) {
+            // Wait for SignalR connection before restoring
+            if (this.connection.state === signalR.HubConnectionState.Connected) {
+                await this.restoreSession(sessionId);
+            } else {
+                // Wait for connection then restore
+                this.connection.onreconnected(async () => {
+                    await this.restoreSession(sessionId);
+                });
+            }
+        }
     }
 
     // Load configuration from server
@@ -313,8 +332,45 @@ Authoring rules:
     setupSignalR() {
         this.connection = new signalR.HubConnectionBuilder()
             .withUrl('/hubs/dxo')
-            .withAutomaticReconnect()
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000]) // Retry intervals
+            .configureLogging(signalR.LogLevel.Warning) // Reduce logging noise
             .build();
+
+        // Connection state handlers
+        this.connection.onreconnecting((error) => {
+            this.connectionState = 'reconnecting';
+            console.warn('SignalR reconnecting...', error);
+            this.showToast('Connection lost - Reconnecting...', 'warning');
+        });
+
+        this.connection.onreconnected(async (connectionId) => {
+            this.connectionState = 'connected';
+            console.log('SignalR reconnected:', connectionId);
+            this.showToast('Connection restored', 'success');
+            
+            // Rejoin session group if we have an active session
+            if (this.currentSessionId) {
+                try {
+                    await this.connection.invoke('JoinSession', this.currentSessionId);
+                    console.log('Rejoined session group:', this.currentSessionId);
+                } catch (error) {
+                    console.error('Failed to rejoin session:', error);
+                    this.showToast('Failed to rejoin session', 'error');
+                }
+            }
+        });
+
+        this.connection.onclose((error) => {
+            this.connectionState = 'disconnected';
+            console.error('SignalR connection closed:', error);
+            this.showToast('Connection lost. Please refresh the page.', 'error');
+            
+            // If session was running, update UI state
+            if (this.isRunning) {
+                this.isRunning = false;
+                this.updateButtonStates();
+            }
+        });
 
         // Session events
         this.connection.on('SessionStarted', (sessionId) => {
@@ -376,8 +432,8 @@ Authoring rules:
         });
 
         this.connection.on('IterationCompleted', (sessionId, iteration) => {
-            // Load feedback rounds after each iteration completes
-            this.loadFeedbackRounds();
+            // Don't load feedback rounds here - wait for SessionCompleted
+            // to avoid rate limiting from rapid repeated calls
         });
 
         // Message events
@@ -592,6 +648,9 @@ Authoring rules:
             this.currentSessionId = session.sessionId;
             document.getElementById('sessionId').textContent = session.sessionId.substring(0, 8) + '...';
 
+            // Update URL with sessionId
+            this.updateSessionUrl(session.sessionId);
+
             // Join SignalR group
             await this.connection.invoke('JoinSession', this.currentSessionId);
 
@@ -696,6 +755,10 @@ Authoring rules:
         this.updateIterationCount(0);
         document.getElementById('sessionId').textContent = '-';
         document.getElementById('finalOutput').value = '';
+        
+        // Clear URL parameter
+        this.clearSessionUrl();
+        
         this.updateOutputButtonStates();
         this.showToast('Session reset', 'info');
     }
@@ -1606,6 +1669,86 @@ Authoring rules:
             btn.style.display = 'inline-block';
         } else {
             btn.style.display = 'none';
+        }
+    }
+
+    // Update URL with sessionId parameter
+    updateSessionUrl(sessionId) {
+        const url = new URL(window.location);
+        url.searchParams.set('sessionId', sessionId);
+        window.history.pushState({}, '', url);
+    }
+
+    // Clear sessionId from URL
+    clearSessionUrl() {
+        const url = new URL(window.location);
+        url.searchParams.delete('sessionId');
+        window.history.pushState({}, '', url);
+    }
+
+    // Restore session from sessionId
+    async restoreSession(sessionId) {
+        try {
+            this.showToast('Restoring session...', 'info');
+            
+            // Fetch session from server
+            const response = await fetch(`/api/session/${sessionId}`);
+            if (!response.ok) {
+                throw new Error('Session not found');
+            }
+            
+            const session = await response.json();
+            
+            // Restore session ID
+            this.currentSessionId = sessionId;
+            document.getElementById('sessionId').textContent = sessionId.substring(0, 8) + '...';
+            
+            // Restore session settings
+            document.getElementById('sessionTopic').value = session.topic || '';
+            document.getElementById('maxIterations').value = session.maxIterations || 8;
+            
+            // Update iteration count and status
+            this.updateIterationCount(session.currentIteration || 0);
+            this.updateStatus(session.status || 'Created');
+            
+            // Set running state based on session status
+            this.isRunning = (session.status === 'Running');
+            this.updateButtonStates();
+            
+            // Restore final output if exists
+            if (session.finalOutput) {
+                document.getElementById('finalOutput').value = session.finalOutput;
+                
+                // Render markdown
+                const container = document.getElementById('finalOutputContainer');
+                if (container) {
+                    if (typeof marked !== 'undefined') {
+                        container.innerHTML = marked.parse(session.finalOutput);
+                    } else {
+                        container.textContent = session.finalOutput;
+                    }
+                }
+                
+                this.updateOutputButtonStates();
+                this.updateFeedbackButtonVisibility(session.status);
+            }
+            
+            // Load feedback rounds
+            await this.loadFeedbackRounds();
+            
+            // Rejoin SignalR group if connected
+            if (this.connection.state === signalR.HubConnectionState.Connected) {
+                await this.connection.invoke('JoinSession', sessionId);
+            }
+            
+            this.showToast('Session restored successfully', 'success');
+            
+        } catch (error) {
+            console.error('Failed to restore session:', error);
+            this.showToast('Failed to restore session: ' + error.message, 'error');
+            
+            // Clear invalid session from URL
+            this.clearSessionUrl();
         }
     }
 }

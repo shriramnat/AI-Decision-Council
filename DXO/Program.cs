@@ -193,14 +193,16 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// Add SignalR with increased timeouts for long-running operations
+// Add SignalR with balanced timeouts for long-running operations
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = builder.Environment.IsDevelopment();
     options.MaximumReceiveMessageSize = 1024 * 1024; // 1MB
-    options.ClientTimeoutInterval = TimeSpan.FromMinutes(10); // Default is 30 seconds
-    options.HandshakeTimeout = TimeSpan.FromSeconds(30); // Default is 15 seconds
-    options.KeepAliveInterval = TimeSpan.FromMinutes(2); // Default is 15 seconds
+    
+    // Balanced timeout settings for stability
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(2); // How long server waits for client ping
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15); // How often server pings client
+    options.HandshakeTimeout = TimeSpan.FromSeconds(30); // Initial connection timeout
 });
 
 // Add Razor Pages
@@ -314,7 +316,7 @@ app.MapPost("/api/session/create", async (CreateSessionRequest request, IOrchest
 app.MapGet("/api/session/{id:guid}", async (Guid id, IOrchestrationService orchestration, CancellationToken ct) =>
 {
     var session = await orchestration.GetSessionAsync(id, ct);
-    return session != null ? Results.Ok(session) : Results.NotFound();
+    return session != null ? Results.Ok(SessionDto.FromSession(session)) : Results.NotFound();
 });
 
 app.MapGet("/api/sessions", async (IOrchestrationService orchestration, CancellationToken ct) =>
@@ -554,7 +556,8 @@ app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (Guid id, Iter
             ct
         );
 
-        return Results.Ok(updatedSession);
+        // Return DTO to avoid circular reference
+        return Results.Ok(SessionDto.FromSession(updatedSession));
     }
     catch (InvalidOperationException ex)
     {
