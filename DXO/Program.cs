@@ -193,11 +193,14 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// Add SignalR
+// Add SignalR with increased timeouts for long-running operations
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = builder.Environment.IsDevelopment();
     options.MaximumReceiveMessageSize = 1024 * 1024; // 1MB
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(10); // Default is 30 seconds
+    options.HandshakeTimeout = TimeSpan.FromSeconds(30); // Default is 15 seconds
+    options.KeepAliveInterval = TimeSpan.FromMinutes(2); // Default is 15 seconds
 });
 
 // Add Razor Pages
