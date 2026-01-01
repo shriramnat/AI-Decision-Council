@@ -227,21 +227,42 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-// Configure rate limiting
+// Configure rate limiting - Policy-based for API endpoints only
 builder.Services.AddRateLimiter(options =>
 {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    // Policy for API endpoints - 50 requests per minute per user/IP
+    options.AddPolicy("ApiPolicy", context =>
         RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            partitionKey: GetUserEmail(context) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = dxoConfig.RateLimiting.PermitLimit,
-                Window = TimeSpan.FromSeconds(dxoConfig.RateLimiting.WindowSeconds),
+                PermitLimit = 50,
+                Window = TimeSpan.FromSeconds(60),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 2
+                QueueLimit = 10
             }));
     
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    
+    // Add logging for rate limit rejections
+    options.OnRejected = async (context, token) =>
+    {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+        var userEmail = GetUserEmail(context.HttpContext);
+        var ipAddress = context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        
+        logger.LogWarning(
+            "⚠️ Rate limit exceeded: Path={Path}, User={User}, IP={IP}, Time={Time}",
+            context.HttpContext.Request.Path,
+            userEmail ?? "anonymous",
+            ipAddress,
+            DateTime.UtcNow);
+        
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync(
+            "Too many requests. Please try again later.", 
+            cancellationToken: token);
+    };
 });
 
 // Add CORS for development
@@ -319,7 +340,7 @@ app.Use(async (context, next) =>
 app.MapRazorPages();
 app.MapHub<DxoHub>("/hubs/dxo");
 
-// Map API endpoints
+// Map API endpoints with rate limiting
 app.MapPost("/api/session/create", async (HttpContext httpContext, CreateSessionRequest request, IOrchestrationService orchestration, CancellationToken ct) =>
 {
     var userEmail = GetUserEmail(httpContext);
@@ -329,19 +350,19 @@ app.MapPost("/api/session/create", async (HttpContext httpContext, CreateSession
     request.UserEmail = userEmail;
     var session = await orchestration.CreateSessionAsync(request, ct);
     return Results.Ok(session);
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapGet("/api/session/{id:guid}", async (Guid id, IOrchestrationService orchestration, CancellationToken ct) =>
 {
     var session = await orchestration.GetSessionAsync(id, ct);
     return session != null ? Results.Ok(SessionDto.FromSession(session)) : Results.NotFound();
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapGet("/api/sessions", async (IOrchestrationService orchestration, CancellationToken ct) =>
 {
     var sessions = await orchestration.GetSessionsAsync(ct);
     return Results.Ok(sessions);
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPost("/api/session/{id:guid}/start", async (HttpContext httpContext, Guid id, IOrchestrationService orchestration, IModelManagementService modelService, CancellationToken ct) =>
 {
@@ -403,7 +424,7 @@ app.MapPost("/api/session/{id:guid}/start", async (HttpContext httpContext, Guid
     {
         return Results.BadRequest(new { error = ex.Message });
     }
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPost("/api/session/{id:guid}/step", async (HttpContext httpContext, Guid id, IOrchestrationService orchestration, IModelManagementService modelService, CancellationToken ct) =>
 {
@@ -465,19 +486,19 @@ app.MapPost("/api/session/{id:guid}/step", async (HttpContext httpContext, Guid 
     {
         return Results.BadRequest(new { error = ex.Message });
     }
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPost("/api/session/{id:guid}/stop", async (Guid id, IOrchestrationService orchestration, CancellationToken ct) =>
 {
     await orchestration.StopSessionAsync(id, ct);
     return Results.Ok(new { success = true });
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapDelete("/api/session/{id:guid}", async (Guid id, IOrchestrationService orchestration, CancellationToken ct) =>
 {
     await orchestration.DeleteSessionAsync(id, ct);
     return Results.Ok(new { success = true });
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPost("/api/session/{id:guid}/reset-memory/{persona}", async (Guid id, string persona, IOrchestrationService orchestration, CancellationToken ct) =>
 {
@@ -488,7 +509,7 @@ app.MapPost("/api/session/{id:guid}/reset-memory/{persona}", async (Guid id, str
     
     await orchestration.ResetPersonaMemoryAsync(id, personaEnum, ct);
     return Results.Ok(new { success = true });
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapGet("/api/session/{id:guid}/feedback-rounds", async (Guid id, IOrchestrationService orchestration, CancellationToken ct) =>
 {
@@ -500,7 +521,7 @@ app.MapGet("/api/session/{id:guid}/feedback-rounds", async (Guid id, IOrchestrat
     
     var feedbackRounds = await orchestration.GetFeedbackRoundsAsync(id, ct);
     return Results.Ok(feedbackRounds);
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, DXO.Models.SubmitFeedbackRequest? request, IOrchestrationService orchestration, CancellationToken ct) =>
 {
@@ -528,7 +549,7 @@ app.MapPost("/api/session/{id:guid}/feedback", async (Guid id, DXO.Models.Submit
     {
         return Results.NotFound(new { error = ex.Message });
     }
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPost("/api/session/{id:guid}/iterate-with-feedback", async (HttpContext httpContext, Guid id, IterateWithFeedbackRequest? request, IOrchestrationService orchestration, IModelManagementService modelService, CancellationToken ct) =>
 {
@@ -642,7 +663,7 @@ app.MapGet("/api/config", async (HttpContext httpContext, IOptions<DxoOptions> o
         maxPromptChars = config.Orchestration.MaxPromptChars,
         maxDraftChars = config.Orchestration.MaxDraftChars
     });
-});
+}).RequireRateLimiting("ApiPolicy");
 
 // Model Management API endpoints
 app.MapGet("/api/models", async (HttpContext httpContext, IModelManagementService modelService, CancellationToken ct) =>
@@ -653,7 +674,31 @@ app.MapGet("/api/models", async (HttpContext httpContext, IModelManagementServic
     
     var models = await modelService.GetAllModelsAsync(userEmail);
     return Results.Ok(models);
-});
+}).RequireRateLimiting("ApiPolicy");
+
+app.MapGet("/api/models/status", async (HttpContext httpContext, IModelManagementService modelService, CancellationToken ct) =>
+{
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    var models = await modelService.GetAllModelsAsync(userEmail);
+    
+    // Count models that have all required fields configured
+    var configuredCount = models.Count(m => 
+        !string.IsNullOrWhiteSpace(m.ModelName) && 
+        !string.IsNullOrWhiteSpace(m.Endpoint) && 
+        !string.IsNullOrWhiteSpace(m.ApiKey));
+    
+    var totalCount = models.Count;
+    
+    return Results.Ok(new 
+    { 
+        configured = configuredCount,
+        total = totalCount,
+        allConfigured = configuredCount == totalCount && totalCount > 0
+    });
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapGet("/api/models/{id:int}", async (HttpContext httpContext, int id, IModelManagementService modelService, CancellationToken ct) =>
 {
@@ -664,7 +709,7 @@ app.MapGet("/api/models/{id:int}", async (HttpContext httpContext, int id, IMode
     var models = await modelService.GetAllModelsAsync(userEmail);
     var model = models.FirstOrDefault(m => m.Id == id);
     return model != null ? Results.Ok(model) : Results.NotFound();
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPost("/api/models", async (HttpContext httpContext, AddModelRequest request, IModelManagementService modelService, CancellationToken ct) =>
 {
@@ -694,7 +739,7 @@ app.MapPost("/api/models", async (HttpContext httpContext, AddModelRequest reque
     {
         return Results.BadRequest(new { error = ex.Message });
     }
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapPut("/api/models/{id:int}", async (HttpContext httpContext, int id, UpdateModelRequest request, IModelManagementService modelService, ILogger<Program> logger, CancellationToken ct) =>
 {
@@ -732,7 +777,7 @@ app.MapPut("/api/models/{id:int}", async (HttpContext httpContext, int id, Updat
         logger.LogError("[API] Failed to update model for user {UserEmail}: {Error}", userEmail, ex.Message);
         return Results.BadRequest(new { error = ex.Message });
     }
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.MapDelete("/api/models/{id:int}", async (HttpContext httpContext, int id, IModelManagementService modelService, CancellationToken ct) =>
 {
@@ -742,7 +787,7 @@ app.MapDelete("/api/models/{id:int}", async (HttpContext httpContext, int id, IM
     
     var deleted = await modelService.DeleteModelAsync(userEmail, id);
     return deleted ? Results.Ok(new { success = true }) : Results.NotFound();
-});
+}).RequireRateLimiting("ApiPolicy");
 
 app.Run();
 

@@ -43,11 +43,46 @@ class DXOApp {
         // Setup scroll buttons (floating top/bottom controls)
         this.setupScrollButtons();
 
+        // Check model configuration status (non-blocking)
+        this.checkModelConfigurationStatus();
+
         // Wait for connection to be ready before restoring session
         if (this.pendingSessionId) {
             await this.waitForConnection();
             await this.restoreSession(this.pendingSessionId);
             this.pendingSessionId = null;
+        }
+    }
+
+    // Check model configuration status asynchronously
+    async checkModelConfigurationStatus() {
+        const statusIndicator = document.getElementById('modelStatusIndicator');
+        if (!statusIndicator) return;
+
+        try {
+            const response = await fetch('/api/models/status');
+            if (!response.ok) {
+                throw new Error('Failed to fetch model status');
+            }
+
+            const status = await response.json();
+            
+            // Update the status indicator based on the response
+            if (status.configured === 0) {
+                statusIndicator.innerHTML = '<span class="status-error">⚠️ No models configured</span>';
+                statusIndicator.style.color = 'var(--danger-color)';
+            } else if (status.configured < status.total) {
+                statusIndicator.innerHTML = `<span class="status-warning">⚠️ ${status.configured} of ${status.total} models configured</span>`;
+                statusIndicator.style.color = 'var(--warning-color)';
+            } else if (status.configured > 0) {
+                statusIndicator.innerHTML = `<span class="status-success">✓ ${status.configured} model${status.configured > 1 ? 's' : ''} configured and ready</span>`;
+                statusIndicator.style.color = 'var(--success-color)';
+            }
+        } catch (error) {
+            console.error('Failed to check model configuration status:', error);
+            // Show error state but don't block the page
+            statusIndicator.innerHTML = '<span class="status-error">⚠️ Unable to check model status</span>';
+            statusIndicator.style.color = 'var(--text-tertiary)';
         }
     }
 

@@ -138,16 +138,16 @@
                 </div>
             </div>
             <div class="import-warning">
-                <strong>⚠️ This operation will:</strong>
+                <strong>⚠️ Warning: <br />This operation will:</strong>
                 <ul>
-                    <li>✏️ Update existing models with matching names</li>
-                    <li>➕ Add new models from the file</li>
-                    <li>🗑️ Delete models not present in the file</li>
+                    <li>Update existing models with matching names</li>
+                    <li>Add new models from the file</li>
+                    <li>Delete models not present in the file</li>
                 </ul>
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeImportConfirmModal()">Cancel</button>
+            @* <button type="button" class="btn btn-secondary" onclick="closeImportConfirmModal()">Cancel</button> *@
             <button type="button" id="btnConfirmImport" class="btn btn-primary" onclick="confirmImport()" disabled>Import Models</button>
         </div>
     </div>
