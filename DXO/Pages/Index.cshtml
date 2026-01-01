@@ -166,7 +166,7 @@
         </div>
         <div class="output-content">
              <!-- Rendered Markdown Container -->
-            <div id="finalOutputContainer" class="markdown-body" style="min-height: 200px; line-height: 1.6;">
+            <div id="finalOutputContainer" class="markdown-body scrollable-output">
                 <p class="text-muted" style="font-style: italic; color: var(--text-tertiary);">Final output will appear here when the Creator finalizes the content or the session is stopped...</p>
             </div>
             <!-- Hidden Raw Output for JS Logic -->
@@ -215,7 +215,7 @@
                     </div>
                     <div class="context-item">
                         <label id="feedbackContextOutputLabel">Current Final Output (v1):</label>
-                        <div id="feedbackContextOutput" class="context-display output-preview"></div>
+                        <div id="feedbackContextOutput" class="context-display scrollable-output"></div>
                     </div>
                 </div>
 
@@ -399,7 +399,10 @@
             <button class="flyout-close" onclick="dxoApp.closeReviewerSelector()">&times;</button>
         </div>
         <div class="flyout-body">
-            <p class="flyout-hint">Choose a reviewer agent template to add to your council:</p>
+            <div class="flyout-body-header">
+                <p class="flyout-hint">Choose a reviewer agent template to add to your council:</p><br />
+                <button id="btnRefreshTemplates" class="btn btn-small btn-secondary" title="Refresh Templates" onclick="dxoApp.refreshReviewerTemplates()">🔄 Refresh</button>
+            </div>
             <div id="reviewerTemplatesGrid" class="reviewer-templates-grid">
                 <!-- Reviewer template cards will be dynamically loaded here -->
             </div>
@@ -412,7 +415,7 @@
     <div class="persona-card reviewer collapsed" data-agent-type="reviewer" data-reviewer-id="">
         <div class="card-header" onclick="togglePersonaCard(this)">
             <div class="reviewer-name-container">
-                <span class="reviewer-icon">🔍</span>
+                <span class="reviewer-icon">🤨</span>
                 <input type="text" class="reviewer-name-input" value="Reviewer" maxlength="50"
                     placeholder="Reviewer name" onclick="event.stopPropagation()" />
             </div>

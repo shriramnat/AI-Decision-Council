@@ -49,7 +49,7 @@
     --creator-border: #e2e8f0;
 
     /* Reviewers: Bright, distinct colors for avatars/badges */
-    --reviewer1-color: #0ea5e9;
+    --reviewer1-color: #0e66e9;
     /* Sky Blue */
     --reviewer1-bg: #f0f9ff;
     --reviewer1-border: #bae6fd;
@@ -105,10 +105,8 @@ body {
 }
 
 .logo {
-    background: var(--primary-gradient);
     background-clip: text;
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     font-weight: 800;
     letter-spacing: -0.02em;
 }

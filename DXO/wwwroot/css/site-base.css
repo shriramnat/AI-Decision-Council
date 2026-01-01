@@ -1,38 +1,5 @@
 /* DXO - Base Structural Styles (Theme-agnostic) */
 
-/* Hubot Sans Font (Locally Hosted) */
-@font-face {
-    font-family: 'Hubot Sans';
-    src: url('fonts/HubotSans-Regular.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Hubot Sans';
-    src: url('fonts/HubotSans-Bold.woff2') format('woff2');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Hubot Sans';
-    src: url('fonts/HubotSans-Medium.woff2') format('woff2');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Hubot Sans';
-    src: url('fonts/HubotSans-Light.woff2') format('woff2');
-    font-weight: 300;
-    font-style: normal;
-    font-display: swap;
-}
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -52,7 +19,7 @@ html {
 }
 
 body {
-    font-family: 'Hubot Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     background: var(--bg-gradient);
     background-attachment: fixed;
     color: var(--text-color);
@@ -451,11 +418,20 @@ a:active {
 }
 
 /* Reviewer Selection Flyout Specific Styles */
+.flyout-body-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
 .flyout-hint {
     color: var(--text-secondary);
     font-size: 0.875rem;
-    margin-bottom: 1.5rem;
     line-height: 1.5;
+    margin: 0;
+    flex: 1;
 }
 
 .reviewer-templates-grid {
@@ -802,8 +778,78 @@ a:active {
     padding-bottom: 0;
 }
 
-.output-preview {
-    padding-left: 2rem;
+/* Shared scrollable output container - used by Final Output and Feedback Modal */
+.scrollable-output {
+    max-height: 16em;
+    /* ~10 lines with line-height 1.6 */
+    overflow-y: auto;
+    padding: 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: var(--glass-bg);
+    line-height: 1.6;
+}
+
+/* Vertical spacing between markdown elements */
+.scrollable-output>*:not(:last-child) {
+    margin-bottom: 0.75em;
+}
+
+.scrollable-output h1,
+.scrollable-output h2,
+.scrollable-output h3,
+.scrollable-output h4 {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.scrollable-output h1:first-child,
+.scrollable-output h2:first-child,
+.scrollable-output h3:first-child,
+.scrollable-output h4:first-child {
+    margin-top: 0;
+}
+
+.scrollable-output ul,
+.scrollable-output ol {
+    padding-left: 1.5em;
+    margin-bottom: 0.75em;
+}
+
+.scrollable-output li {
+    margin-bottom: 0.25em;
+}
+
+.scrollable-output code {
+    background: var(--code-bg, rgba(0, 0, 0, 0.1));
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.scrollable-output pre {
+    background: var(--code-bg, rgba(0, 0, 0, 0.1));
+    padding: 0.75em 1em;
+    border-radius: var(--radius);
+    overflow-x: auto;
+}
+
+/* Custom scrollbar styling for scrollable outputs */
+.scrollable-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable-output::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollable-output::-webkit-scrollbar-thumb {
+    background: var(--text-tertiary);
+    border-radius: 4px;
+}
+
+.scrollable-output::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 /* Agent Configurations Panel */
@@ -1309,7 +1355,7 @@ a:active {
 }
 
 .output-content {
-    padding-left: 2rem;
+    padding: 1rem 1.5rem 1.5rem;
 }
 
 .output-content textarea {
@@ -1525,10 +1571,13 @@ a:active {
 }
 
 @keyframes pulse-border {
-    0%, 100% {
+
+    0%,
+    100% {
         border-color: var(--warning-color);
         opacity: 1;
     }
+
     50% {
         border-color: rgba(251, 191, 36, 0.5);
         opacity: 0.8;
@@ -2085,13 +2134,13 @@ a:active {
     .tagline {
         display: none;
     }
-    
+
     .feedback-round-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .feedback-round-header .feedback-timestamp {
         font-size: 0.75rem;
     }

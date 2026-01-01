@@ -32,10 +32,10 @@
     --creator-color: #ff9500;
     --creator-bg: rgba(255, 149, 0, 0.1);
     --creator-border: rgba(255, 149, 0, 0.4);
-    --reviewer1-color: #64d2ff;
+    --reviewer1-color: #0e4ce9;
     --reviewer1-bg: rgba(100, 210, 255, 0.1);
     --reviewer1-border: rgba(100, 210, 255, 0.3);
-    --reviewer2-color: #ff9f0a;
+    --reviewer2-color: #8b590f;
     --reviewer2-bg: rgba(255, 159, 10, 0.1);
     --reviewer2-border: rgba(255, 159, 10, 0.3);
 
@@ -172,6 +172,7 @@
 /* Persona Cards */
 .persona-card {
     background: rgba(0, 0, 0, 0.2);
+    margin-bottom: 0.25rem;
 }
 
 .persona-card:hover {
@@ -184,22 +185,32 @@
 
 .persona-card.reviewer1 {
     border-color: var(--reviewer1-border);
+    background: rgba(100, 210, 255, 0.05);
+    box-shadow: 0 0 20px rgba(100, 210, 255, 0.1);
 }
 
 .persona-card.reviewer2 {
     border-color: var(--reviewer2-border);
+    background: rgba(255, 159, 10, 0.05);
+    box-shadow: 0 0 20px rgba(255, 159, 10, 0.1);
 }
 
 .persona-card.reviewer3 {
     border-color: rgba(48, 209, 88, 0.3);
+    background: rgba(48, 209, 88, 0.05);
+    box-shadow: 0 0 20px rgba(48, 209, 88, 0.1);
 }
 
 .persona-card.reviewer4 {
     border-color: rgba(255, 69, 58, 0.3);
+    background: rgba(255, 69, 58, 0.05);
+    box-shadow: 0 0 20px rgba(255, 69, 58, 0.1);
 }
 
 .persona-card.reviewer5 {
     border-color: rgba(191, 90, 242, 0.3);
+    background: rgba(191, 90, 242, 0.05);
+    box-shadow: 0 0 20px rgba(191, 90, 242, 0.1);
 }
 
 .card-header {
@@ -211,7 +222,7 @@
 }
 
 .persona-card.reviewer1 .card-header h3 {
-    color: var(--reviewer1-color);
+    color: #e50a7b;
 }
 
 .persona-card.reviewer2 .card-header h3 {
@@ -292,12 +303,12 @@
 
 /* Message Cards */
 .message-card {
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.3);
     border-left-color: transparent;
 }
 
 .message-card:hover {
-    background: #f8fbff;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .message-card.creator {
@@ -329,37 +340,37 @@
 }
 
 .message-header {
-    background: #f8fbff;
+    background: rgba(0, 0, 0, 0.4);
 }
 
 .message-card.creator .message-header {
-    background: #0f172a;
+    background: rgba(15, 23, 42, 0.6);
     color: #ffffff;
 }
 
 .message-card.reviewer1 .message-header {
-    background: var(--reviewer1-color);
-    color: #ffffff;
+    background: rgba(100, 210, 255, 0.15);
+    color: var(--reviewer1-color);
 }
 
 .message-card.reviewer2 .message-header {
-    background: var(--reviewer2-color);
-    color: #ffffff;
+    background: rgba(255, 159, 10, 0.15);
+    color: var(--reviewer2-color);
 }
 
 .message-card.reviewer3 .message-header {
-    background: #30d158;
-    color: #ffffff;
+    background: rgba(48, 209, 88, 0.15);
+    color: #30d158;
 }
 
 .message-card.reviewer4 .message-header {
-    background: #ff453a;
-    color: #ffffff;
+    background: rgba(255, 69, 58, 0.15);
+    color: #ff453a;
 }
 
 .message-card.reviewer5 .message-header {
-    background: #bf5af2;
-    color: #ffffff;
+    background: rgba(191, 90, 242, 0.15);
+    color: #bf5af2;
 }
 
 .message-card.creator .message-persona,
@@ -368,7 +379,7 @@
 .message-card.reviewer3 .message-persona,
 .message-card.reviewer4 .message-persona,
 .message-card.reviewer5 .message-persona {
-    color: #ffffff;
+    color: inherit;
 }
 
 .message-content.collapsed::after {

@@ -20,29 +20,29 @@ class DXOApp {
 
     async init() {
         await this.loadConfig();
-        
+
         // Check for sessionId in URL and restore if present
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('sessionId');
-        
+
         // Store sessionId for later if needed
         if (sessionId) {
             this.pendingSessionId = sessionId;
         }
-        
+
         this.setupSignalR();
         this.setupEventListeners();
         await this.loadDefaultPrompts(); // Load prompts from agentconfigurations.json
         this.createToastContainer();
-        
+
         // Cache DOM elements after toast container is created
         this.cacheDOMElements();
-        
+
         this.addDefaultReviewer(); // Add one default reviewer
 
         // Setup scroll buttons (floating top/bottom controls)
         this.setupScrollButtons();
-        
+
         // Wait for connection to be ready before restoring session
         if (this.pendingSessionId) {
             await this.waitForConnection();
@@ -66,11 +66,11 @@ class DXOApp {
             stopMarker: document.getElementById('stopMarker'),
             stopOnApproved: document.getElementById('stopOnApproved'),
             runMode: document.getElementById('runMode'),
-            
+
             // Output elements
             finalOutput: document.getElementById('finalOutput'),
             finalOutputContainer: document.getElementById('finalOutputContainer'),
-            
+
             // Button elements
             btnStart: document.getElementById('btnStart'),
             btnStep: document.getElementById('btnStep'),
@@ -80,17 +80,17 @@ class DXOApp {
             btnDownloadOutput: document.getElementById('btnDownloadOutput'),
             btnCopyOutput: document.getElementById('btnCopyOutput'),
             btnIterateWithFeedback: document.getElementById('btnIterateWithFeedback'),
-            
+
             // Modal elements
             exportModal: document.getElementById('exportModal'),
             exportModalTitle: document.getElementById('exportModalTitle'),
             btnExportOption1: document.getElementById('btnExportOption1'),
             btnExportOption2: document.getElementById('btnExportOption2'),
             feedbackModal: document.getElementById('feedbackModal'),
-            
+
             // Viewer elements
             traceViewer: document.getElementById('traceViewer'),
-            
+
             // Creator elements
             creatorPrompt: document.getElementById('creatorPrompt'),
             creatorModel: document.getElementById('creatorModel'),
@@ -99,7 +99,7 @@ class DXOApp {
             creatorTopP: document.getElementById('creatorTopP'),
             creatorPresencePenalty: document.getElementById('creatorPresencePenalty'),
             creatorFrequencyPenalty: document.getElementById('creatorFrequencyPenalty'),
-            
+
             // Container elements
             reviewerCardsContainer: document.getElementById('reviewerCardsContainer')
         };
@@ -116,12 +116,12 @@ class DXOApp {
             console.warn('renderMarkdown: container is null');
             return false;
         }
-        
+
         if (!content) {
             container.textContent = '';
             return true;
         }
-        
+
         if (typeof marked !== 'undefined') {
             try {
                 container.innerHTML = marked.parse(content);
@@ -366,32 +366,19 @@ If and only if the draft is publication-ready from your perspective, include the
     }
 
     // Update reviewer card colors based on their index
+    // Uses CSS classes (reviewer1, reviewer2, etc.) instead of inline styles
+    // All colors are defined in theme CSS files (theme-dark.css, theme-light.css)
     updateReviewerColors() {
-        const colors = [
-            { border: 'rgba(100, 210, 255, 0.3)', bg: '#0ea5e9' },
-            { border: 'rgba(255, 159, 10, 0.3)', bg: '#f59e0b' },
-            { border: 'rgba(48, 209, 88, 0.3)', bg: '#10b981' },
-            { border: 'rgba(255, 69, 58, 0.3)', bg: '#ef4444' },
-            { border: 'rgba(191, 90, 242, 0.3)', bg: '#a855f7' }
-        ];
+        const colorClasses = ['reviewer1', 'reviewer2', 'reviewer3', 'reviewer4', 'reviewer5'];
 
         const cards = document.querySelectorAll('#reviewerCardsContainer .persona-card');
         cards.forEach((card, index) => {
-            const colorSet = colors[index % colors.length];
-            card.style.borderColor = colorSet.border;
-            const header = card.querySelector('.card-header');
-            if (header) {
-                header.style.backgroundColor = colorSet.bg;
-                header.style.color = '#ffffff';
-                const headerText = header.querySelector('h3, .reviewer-name-container');
-                if (headerText) {
-                    headerText.style.color = '#ffffff';
-                }
-                const nameInput = header.querySelector('.reviewer-name-input');
-                if (nameInput) {
-                    nameInput.style.color = '#ffffff';
-                }
-            }
+            // Remove any existing reviewer color classes
+            colorClasses.forEach(cls => card.classList.remove(cls));
+
+            // Add the appropriate class based on index
+            const colorClass = colorClasses[index % colorClasses.length];
+            card.classList.add(colorClass);
         });
     }
 
@@ -473,7 +460,7 @@ Authoring rules:
             console.log('SignalR reconnected:', connectionId);
             this.showToast('Connection restored', 'success');
             this.updateConnectionStatus('connected');
-            
+
             // Rejoin session group if we have an active session
             if (this.currentSessionId) {
                 try {
@@ -491,10 +478,10 @@ Authoring rules:
             console.error('SignalR connection closed:', error);
             this.showToast('Connection lost. Please refresh the page.', 'error');
             this.updateConnectionStatus('disconnected');
-            
+
             // Reset connection promise so it can be re-established
             this.connectionPromise = null;
-            
+
             // If session was running, update UI state
             if (this.isRunning) {
                 this.isRunning = false;
@@ -523,13 +510,15 @@ Authoring rules:
         this.connection.on('SessionCompleted', (sessionId, finalContent, stopReason) => {
             this.updateStatus('Completed');
             this.isRunning = false;
-            this.updateUIState();
 
             // Populate hidden textarea for copy/download/forms
             this.dom.finalOutput.value = finalContent;
 
             // Render Markdown in the new container using utility method
             this.renderMarkdown(this.dom.finalOutputContainer, finalContent);
+
+            // Update UI state AFTER setting finalOutput so download button is enabled
+            this.updateUIState();
 
             this.showToast(`Session completed: ${stopReason}`, 'success');
             this.loadFeedbackRounds(); // Load feedback rounds when session completes
@@ -579,7 +568,7 @@ Authoring rules:
      */
     async waitForConnection() {
         // If already connected, return immediately
-        if (this.connectionState === 'connected' && 
+        if (this.connectionState === 'connected' &&
             this.connection.state === signalR.HubConnectionState.Connected) {
             return Promise.resolve();
         }
@@ -618,7 +607,7 @@ Authoring rules:
             statusIndicator = document.createElement('div');
             statusIndicator.id = 'connectionStatus';
             statusIndicator.className = 'connection-status';
-            
+
             // Insert at top of page or in a suitable location
             const container = document.querySelector('.container') || document.body;
             container.insertBefore(statusIndicator, container.firstChild);
@@ -626,15 +615,15 @@ Authoring rules:
 
         // Update status
         statusIndicator.className = `connection-status connection-${status}`;
-        
+
         const statusText = {
             'connected': '● Connected',
             'reconnecting': '⟳ Reconnecting...',
             'disconnected': '○ Disconnected'
         };
-        
+
         statusIndicator.textContent = statusText[status] || status;
-        
+
         // Auto-hide if connected after 3 seconds
         if (status === 'connected') {
             setTimeout(() => {
@@ -946,10 +935,10 @@ Authoring rules:
         this.updateIterationCount(0);
         document.getElementById('sessionId').textContent = '-';
         document.getElementById('finalOutput').value = '';
-        
+
         // Clear URL parameter
         this.clearSessionUrl();
-        
+
         this.updateOutputButtonStates();
         this.showToast('Session reset', 'info');
     }
@@ -959,7 +948,7 @@ Authoring rules:
         const output = document.getElementById('finalOutput').value;
         const downloadBtn = document.getElementById('btnDownloadOutput');
         const copyBtn = document.getElementById('btnCopyOutput');
-        
+
         if (output && output.trim().length > 0) {
             downloadBtn.disabled = false;
             copyBtn.disabled = false;
@@ -1019,15 +1008,15 @@ Authoring rules:
         this.dom.btnStep.disabled = this.isRunning;
         this.dom.btnStop.disabled = !this.isRunning;
         this.dom.btnSessionSettings.disabled = this.isRunning;
-        
+
         // Output buttons
         const hasOutput = this.dom.finalOutput.value.trim().length > 0;
         this.dom.btnDownloadOutput.disabled = !hasOutput;
         this.dom.btnCopyOutput.disabled = false; // Always enabled (shows warning if no output)
-        
+
         // Feedback button
         const status = this.dom.sessionStatus.textContent;
-        this.dom.btnIterateWithFeedback.style.display = 
+        this.dom.btnIterateWithFeedback.style.display =
             status === 'Completed' ? 'inline-block' : 'none';
     }
 
@@ -1227,7 +1216,7 @@ Authoring rules:
      */
     handleExport(exportType, format) {
         let content, filename, contentType = 'text/plain';
-        
+
         // Get content based on export type
         if (exportType === 'output') {
             content = this.dom.finalOutput.value;
@@ -1237,14 +1226,14 @@ Authoring rules:
                 return;
             }
             filename = `dxo-output-${Date.now()}.${format}`;
-            
+
         } else if (exportType === 'transcript') {
             if (this.messages.length === 0) {
                 this.showToast('No transcript to export', 'warning');
                 this.closeExportModal();
                 return;
             }
-            
+
             if (format === 'json') {
                 content = JSON.stringify({
                     sessionId: this.currentSessionId,
@@ -1261,12 +1250,12 @@ Authoring rules:
                 filename = `dxo-transcript-${Date.now()}.md`;
             }
         }
-        
+
         // Download
         const blob = new Blob([content], { type: contentType });
         this.downloadBlob(blob, filename);
         this.closeExportModal();
-        
+
         const successMsg = exportType === 'output' ? 'Output downloaded' : 'Transcript exported';
         this.showToast(successMsg, 'success');
     }
@@ -1406,7 +1395,9 @@ Authoring rules:
         grid.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Loading templates...</p>';
 
         try {
-            const response = await fetch('/agentconfigurations.json');
+            const response = await fetch('/agentconfigurations.json', {
+                cache: 'no-store'  // Bypass cache to get fresh data
+            });
             if (!response.ok) {
                 throw new Error('Failed to load agent configurations');
             }
@@ -1493,6 +1484,94 @@ Authoring rules:
 
         // Show success message
         this.showToast(`Added ${template.role}`, 'success');
+    }
+
+    // Refresh reviewer templates - reloads from JSON and syncs existing reviewers
+    async refreshReviewerTemplates() {
+        const refreshBtn = document.getElementById('btnRefreshTemplates');
+        const originalText = refreshBtn.textContent;
+
+        try {
+            // Show loading state
+            refreshBtn.textContent = '⏳';
+            refreshBtn.disabled = true;
+
+            // Fetch fresh configuration
+            const response = await fetch('/agentconfigurations.json', {
+                cache: 'no-store'  // Bypass cache to get fresh data
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load agent configurations');
+            }
+
+            const config = await response.json();
+            const jsonReviewers = config.agents?.reviewers || [];
+
+            // Create a map of JSON reviewers by role (name)
+            const jsonReviewerMap = new Map();
+            jsonReviewers.forEach(r => {
+                jsonReviewerMap.set(r.role, r);
+            });
+
+            // Track reviewers to remove (those no longer in JSON)
+            const reviewersToRemove = [];
+            let updatedCount = 0;
+
+            // Iterate through existing reviewers in the container
+            this.reviewers.forEach(reviewer => {
+                const matchingTemplate = jsonReviewerMap.get(reviewer.name);
+
+                if (matchingTemplate) {
+                    // Reviewer still exists in JSON - update its prompt
+                    const formattedPrompt = matchingTemplate.prompt.replace(/\\n/g, '\n');
+
+                    // Only update if prompt has changed
+                    if (reviewer.prompt !== formattedPrompt) {
+                        reviewer.prompt = formattedPrompt;
+
+                        // Update the prompt textarea in the DOM
+                        const card = document.querySelector(`[data-reviewer-id="${reviewer.id}"]`);
+                        if (card) {
+                            const promptTextarea = card.querySelector('.reviewer-prompt');
+                            if (promptTextarea) {
+                                promptTextarea.value = formattedPrompt;
+                            }
+                        }
+                        updatedCount++;
+                    }
+                } else {
+                    // Reviewer no longer in JSON - mark for removal
+                    reviewersToRemove.push(reviewer.id);
+                }
+            });
+
+            // Remove reviewers that are no longer in JSON
+            reviewersToRemove.forEach(reviewerId => {
+                this.deleteReviewer(reviewerId);
+            });
+
+            // Reload the template grid to reflect current state
+            await this.loadReviewerTemplates();
+
+            // Show success message with summary
+            let message = 'Templates refreshed';
+            if (updatedCount > 0 || reviewersToRemove.length > 0) {
+                const parts = [];
+                if (updatedCount > 0) parts.push(`${updatedCount} updated`);
+                if (reviewersToRemove.length > 0) parts.push(`${reviewersToRemove.length} removed`);
+                message = `Templates refreshed: ${parts.join(', ')}`;
+            }
+            this.showToast(message, 'success');
+
+        } catch (error) {
+            console.error('Failed to refresh reviewer templates:', error);
+            this.showToast('Failed to refresh templates', 'error');
+        } finally {
+            // Restore button state
+            refreshBtn.textContent = originalText;
+            refreshBtn.disabled = false;
+        }
     }
 
     // Check if a model is from xAI (Grok models)
@@ -1587,11 +1666,11 @@ Authoring rules:
         feedbackRounds.forEach(round => {
             const reviewerFeedback = round.reviewerFeedbackJson ? JSON.parse(round.reviewerFeedbackJson) : [];
             const approvedBadge = round.allReviewersApproved ? '<span class="badge badge-success">✓ All Approved</span>' : '';
-            
+
             // Check if reviewer feedback has any actual content
-            const hasReviewerContent = reviewerFeedback && reviewerFeedback.length > 0 && 
+            const hasReviewerContent = reviewerFeedback && reviewerFeedback.length > 0 &&
                 reviewerFeedback.some(rf => rf.feedback && rf.feedback.trim().length > 0);
-            
+
             // Render draft content as markdown
             let draftPreviewHtml = '';
             const draftText = round.draftContent || 'No draft available';
@@ -1745,7 +1824,7 @@ Authoring rules:
             // Update modal content and render markdown
             const modalContent = document.getElementById('draftModalContent');
             document.getElementById('draftModalTitle').textContent = `Iteration ${iteration} - Full Draft`;
-            
+
             // Render markdown in modal
             this.renderMarkdown(modalContent, round.draftContent);
 
@@ -1818,10 +1897,10 @@ Authoring rules:
         try {
             const response = await fetch(`/api/session/${this.currentSessionId}`);
             if (!response.ok) throw new Error('Failed to fetch session');
-            
+
             const session = await response.json();
             const feedbackVersion = session.feedbackVersion || 1;
-            
+
             // Update the output label with version
             const outputLabel = document.getElementById('feedbackContextOutputLabel');
             outputLabel.textContent = `Current Final Output (v${feedbackVersion}):`;
@@ -1893,10 +1972,10 @@ Authoring rules:
 
             // Get the updated session from the response
             const updatedSession = await response.json();
-            
+
             // Update the UI with the new max iterations
             document.getElementById('maxIterations').value = updatedSession.maxIterations;
-            
+
             // Update the iteration count display with current iteration and new max
             this.updateIterationCount(updatedSession.currentIteration);
 
@@ -1940,56 +2019,56 @@ Authoring rules:
     async restoreSession(sessionId) {
         try {
             this.showToast('Restoring session...', 'info');
-            
+
             // Ensure connection is ready before restoring
             await this.waitForConnection();
-            
+
             // Fetch session from server
             const response = await fetch(`/api/session/${sessionId}`);
             if (!response.ok) {
                 throw new Error('Session not found');
             }
-            
+
             const session = await response.json();
-            
+
             // Restore session ID
             this.currentSessionId = sessionId;
             document.getElementById('sessionId').textContent = sessionId.substring(0, 8) + '...';
-            
+
             // Restore session settings
             document.getElementById('sessionTopic').value = session.topic || '';
             document.getElementById('maxIterations').value = session.maxIterations || 8;
-            
+
             // Update iteration count and status
             this.updateIterationCount(session.currentIteration || 0);
             this.updateStatus(session.status || 'Created');
-            
+
             // Set running state based on session status
             this.isRunning = (session.status === 'Running');
             this.updateButtonStates();
-            
+
             // Restore final output if exists
             if (session.finalOutput) {
                 this.dom.finalOutput.value = session.finalOutput;
-                
+
                 // Render markdown using utility method
                 this.renderMarkdown(this.dom.finalOutputContainer, session.finalOutput);
-                
+
                 this.updateUIState();
             }
-            
+
             // Load feedback rounds
             await this.loadFeedbackRounds();
-            
+
             // Rejoin SignalR group
             await this.connection.invoke('JoinSession', sessionId);
-            
+
             this.showToast('Session restored successfully', 'success');
-            
+
         } catch (error) {
             console.error('Failed to restore session:', error);
             this.showToast('Failed to restore session: ' + error.message, 'error');
-            
+
             // Clear invalid session from URL
             this.clearSessionUrl();
         }
