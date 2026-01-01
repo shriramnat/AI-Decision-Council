@@ -122,6 +122,65 @@
     </div> *@
 </div>
 
+<!-- Import Confirmation Modal -->
+<div id="importConfirmModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Import Model Configuration</h3>
+            <button type="button" class="modal-close" onclick="closeImportConfirmModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="file-select-section">
+                <label class="file-select-label">Select Configuration File:</label>
+                <div class="file-select-display">
+                    <span id="importSelectedFileName" class="selected-file-name">No file selected</span>
+                    <button type="button" class="btn btn-secondary" onclick="selectImportFile()">Choose File</button>
+                </div>
+            </div>
+            <div class="import-warning">
+                <strong>⚠️ This operation will:</strong>
+                <ul>
+                    <li>✏️ Update existing models with matching names</li>
+                    <li>➕ Add new models from the file</li>
+                    <li>🗑️ Delete models not present in the file</li>
+                </ul>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeImportConfirmModal()">Cancel</button>
+            <button type="button" id="btnConfirmImport" class="btn btn-primary" onclick="confirmImport()" disabled>Import Models</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteConfirmModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirm Delete</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteConfirmModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="delete-confirm-text">Are you sure you want to delete the model:</p>
+            <p class="delete-model-name" id="deleteModelName"></p>
+            <p class="delete-warning">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete Model</button>
+        </div>
+    </div>
+</div>
+
+<!-- Import Progress Overlay -->
+<div id="importProgressOverlay" class="progress-overlay hidden">
+    <div class="progress-content">
+        <div class="spinner"></div>
+        <p class="progress-message">Importing models...</p>
+        <p class="progress-submessage">Please wait</p>
+    </div>
+</div>
+
 <!-- Model Configuration Flyout -->
 <div id="modelFlyout" class="flyout">
     <div class="flyout-content">
@@ -187,7 +246,7 @@
 </div>
 
 @section Scripts {
-    <script>
+<script>
         function toggleVisibility(inputId) {
             const input = document.getElementById(inputId);
             if (input.type === 'password') {
@@ -273,8 +332,6 @@
             if (apiKeyToSend !== undefined) {
                 requestBody.apiKey = apiKeyToSend;
             }
-            
-            console.log('Saving row with data:', requestBody);
             
             try {
                 const response = await fetch(`/api/models/${id}`, {
@@ -365,10 +422,39 @@
             }
         }
 
+        // Store pending delete operation
+        let pendingDeleteId = null;
+        let pendingDeleteName = null;
+
         async function deleteModel(id, modelName) {
-            if (!confirm(`Are you sure you want to delete the model "${modelName}"?`)) {
+            // Store delete info and show confirmation modal
+            pendingDeleteId = id;
+            pendingDeleteName = modelName;
+            showDeleteConfirmModal(modelName);
+        }
+
+        // Show delete confirmation modal
+        function showDeleteConfirmModal(modelName) {
+            document.getElementById('deleteModelName').textContent = modelName;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        // Close delete confirmation modal
+        function closeDeleteConfirmModal() {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            pendingDeleteId = null;
+            pendingDeleteName = null;
+        }
+
+        // Confirm and proceed with delete
+        async function confirmDelete() {
+            if (!pendingDeleteId) {
                 return;
             }
+
+            const id = pendingDeleteId;
+            const modelName = pendingDeleteName; // Store before closing modal
+            closeDeleteConfirmModal();
 
             try {
                 const response = await fetch(`/api/models/${id}`, {
@@ -376,12 +462,13 @@
                 });
 
                 if (response.ok) {
-                    window.location.reload();
+                    showToast(`Model "${modelName}" deleted successfully`, 'success');
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
-                    alert('Failed to delete model.');
+                    showToast('Failed to delete model', 'error');
                 }
             } catch (error) {
-                alert('An error occurred: ' + error.message);
+                showToast('An error occurred: ' + error.message, 'error');
             }
         }
 
@@ -394,10 +481,22 @@
             }
         }
 
-        // Trigger file input for import
+        // Open import modal directly
         function importModels() {
+            // Reset file input and show modal
+            document.getElementById('importFileInput').value = '';
+            document.getElementById('importSelectedFileName').textContent = 'No file selected';
+            document.getElementById('btnConfirmImport').disabled = true;
+            document.getElementById('importConfirmModal').classList.remove('hidden');
+        }
+
+        // Trigger file picker from modal
+        function selectImportFile() {
             document.getElementById('importFileInput').click();
         }
+
+        // Store the selected file for later use
+        let pendingImportFile = null;
 
         // Handle the imported file
         async function handleImportFile(event) {
@@ -408,44 +507,163 @@
 
             // Verify file extension
             if (!file.name.endsWith('.modelconfig')) {
-                alert('Invalid file type. Please select a .modelconfig file.');
+                showToast('Invalid file type. Please select a .modelconfig file.', 'error');
                 event.target.value = ''; // Reset input
+                document.getElementById('importSelectedFileName').textContent = 'No file selected';
+                document.getElementById('btnConfirmImport').disabled = true;
                 return;
             }
 
-            if (!confirm(`Import models from "${file.name}"?\n\nThis will:\n- Update existing models with matching names\n- Add new models from the file\n- Delete models not in the file\n\nContinue?`)) {
-                event.target.value = ''; // Reset input
+            // Store the file and update UI
+            pendingImportFile = file;
+            document.getElementById('importSelectedFileName').textContent = file.name;
+            document.getElementById('btnConfirmImport').disabled = false;
+        }
+
+        // Close import confirmation modal
+        function closeImportConfirmModal() {
+            document.getElementById('importConfirmModal').classList.add('hidden');
+            pendingImportFile = null;
+            document.getElementById('importFileInput').value = '';
+        }
+
+        // Confirm and proceed with import
+        async function confirmImport() {
+            if (!pendingImportFile) {
+                showToast('Please select a file first', 'warning');
                 return;
             }
+
+            // Store file reference before closing modal (which clears pendingImportFile)
+            const fileToUpload = pendingImportFile;
+
+            // Close confirmation modal
+            closeImportConfirmModal();
+
+            // Show progress overlay
+            showImportProgress();
 
             try {
                 const formData = new FormData();
-                formData.append('file', file);
-                
-                // Get antiforgery token
-                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-                if (token) {
-                    formData.append('__RequestVerificationToken', token);
-                }
+                formData.append('file', fileToUpload, fileToUpload.name);
 
                 const response = await fetch('/Settings?handler=Import', {
                     method: 'POST',
                     body: formData
+                    // Don't set Content-Type header - let browser set it with boundary
                 });
 
                 if (response.ok) {
                     const result = await response.json();
-                    alert(result.message || 'Import successful!');
-                    window.location.reload();
+                    
+                    // Reload the page content without flashing
+                    await reloadModelsTable();
+                    
+                    // Hide progress overlay after content is loaded
+                    hideImportProgress();
+                    
+                    // Show success message after reload completes
+                    showToast(result.message || 'Import successful!', 'success');
                 } else {
+                    hideImportProgress();
                     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-                    alert('Import failed: ' + (error.error || 'Unknown error'));
+                    showToast('Import failed: ' + (error.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                alert('Import failed: ' + error.message);
-            } finally {
-                event.target.value = ''; // Reset input
+                hideImportProgress();
+                showToast('Import failed: ' + error.message, 'error');
             }
+        }
+
+        // Reload the models table content without full page refresh
+        async function reloadModelsTable() {
+            try {
+                // Fetch fresh HTML content from the server
+                const response = await fetch(window.location.href, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest' // Indicate AJAX request
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to reload content');
+                }
+                
+                const html = await response.text();
+                
+                // Parse the response HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Find the models table container in the new content
+                const newTableContainer = doc.querySelector('.models-table-container, .empty-state');
+                const currentTableContainer = document.querySelector('.models-table-container')?.parentElement || 
+                                            document.querySelector('.empty-state')?.parentElement;
+                
+                if (newTableContainer && currentTableContainer) {
+                    // Smoothly fade out old content
+                    currentTableContainer.style.transition = 'opacity 0.2s ease';
+                    currentTableContainer.style.opacity = '0';
+                    
+                    // Wait for fade out
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    // Replace the content
+                    const newContent = doc.querySelector('.models-table-container, .empty-state');
+                    if (newContent) {
+                        const oldContent = document.querySelector('.models-table-container, .empty-state');
+                        if (oldContent) {
+                            oldContent.replaceWith(newContent);
+                        }
+                    }
+                    
+                    // Fade in new content
+                    currentTableContainer.style.opacity = '1';
+                } else {
+                    // Fallback to full page reload if we can't find the elements
+                    console.warn('Could not find table elements, falling back to full reload');
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error reloading table:', error);
+                // Fallback to full page reload on error
+                window.location.reload();
+            }
+        }
+
+        // Show import progress overlay
+        function showImportProgress() {
+            document.getElementById('importProgressOverlay').classList.remove('hidden');
+        }
+
+        // Hide import progress overlay
+        function hideImportProgress() {
+            document.getElementById('importProgressOverlay').classList.add('hidden');
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            // Create toast container if it doesn't exist
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+
+            // Auto-remove after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('toast-fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
         // Close flyout on escape key
@@ -461,271 +679,5 @@
                 closeModelFlyout();
             }
         });
-    </script>
+</script>
 }
-
-<style>
-    .settings-section {
-        margin-bottom: 2rem;
-        padding-bottom: 1.5rem;
-    }
-
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .section-header h3 {
-        margin: 0;
-        color: var(--text-color);
-        font-size: 1.1rem;
-    }
-
-    .section-header-actions {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .models-table-container {
-        overflow-x: auto;
-        margin-bottom: 1rem;
-    }
-
-    .models-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: #ffffff;
-        border: 1px solid var(--border-color, #dce3ec);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    }
-
-    .models-table th,
-    .models-table td {
-        padding: 0.75rem;
-        text-align: left;
-        border-bottom: 1px solid var(--border-color, #e5e7eb);
-    }
-
-    .models-table th {
-        background: #f8fbff;
-        font-weight: 600;
-        color: var(--text-color);
-    }
-
-    .models-table tr:last-child td {
-        border-bottom: none;
-    }
-
-    .models-table tr:hover {
-        background: #f5f7fb;
-    }
-
-    .model-endpoint {
-        max-width: 300px;
-    }
-
-    .endpoint-text {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .model-apikey {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .editable-input {
-        width: 100%;
-        padding: 0.4rem 0.6rem;
-        background: #f8fafc;
-        border: 1px solid var(--border-color, #dce3ec);
-        border-radius: 8px;
-        color: var(--text-color);
-        font-size: 0.9rem;
-        transition: border-color 0.2s;
-    }
-
-    .editable-input:focus {
-        outline: none;
-        border-color: var(--primary-color, #1e6bff);
-        box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-    }
-
-    .name-input {
-        min-width: 150px;
-    }
-
-    .endpoint-input {
-        min-width: 250px;
-        font-size: 0.85rem;
-    }
-
-    .apikey-input {
-        flex: 1;
-        min-width: 150px;
-        font-size: 0.85rem;
-    }
-
-    .btn-icon {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        font-size: 1.2rem;
-        padding: 0.2rem 0.4rem;
-        opacity: 0.7;
-        transition: opacity 0.2s, transform 0.1s;
-    }
-
-    .btn-icon:hover:not(:disabled) {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-
-    .btn-icon:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .btn-save {
-        color: #28a745;
-    }
-
-    .btn-delete {
-        color: #dc3545;
-    }
-
-    .badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .badge-openai {
-        background: #10a37f;
-        color: white;
-    }
-
-    .badge-azure {
-        background: #0078d4;
-        color: white;
-    }
-
-    .badge-google {
-        background: #4285f4;
-        color: white;
-    }
-
-    .badge-xai {
-        background: #8b5cf6;
-        color: white;
-    }
-
-    .badge-anthropic {
-        background: #d97706;
-        color: white;
-    }
-
-    .model-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .empty-state {
-        padding: 2rem;
-        text-align: center;
-        color: var(--text-secondary, #999);
-    }
-
-    /* Flyout Styles */
-    .flyout {
-        position: fixed;
-        top: 0;
-        right: -500px;
-        width: 500px;
-        height: 100vh;
-        background: #ffffff;
-        box-shadow: -16px 0 40px rgba(15, 23, 42, 0.12);
-        border-left: 1px solid var(--border-color, #dce3ec);
-        transition: right 0.3s ease;
-        z-index: 1000;
-    }
-
-    .flyout.active {
-        right: 0;
-    }
-
-    .flyout-content {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-
-    .flyout-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--border-color, #dce3ec);
-        background: #f8fbff;
-    }
-
-    .flyout-header h3 {
-        margin: 0;
-        color: var(--text-color);
-    }
-
-    .flyout-close {
-        background: transparent;
-        border: none;
-        font-size: 2rem;
-        cursor: pointer;
-        color: var(--text-secondary, #6b7280);
-        line-height: 1;
-        padding: 0;
-    }
-
-    .flyout-close:hover {
-        color: var(--text-color);
-        background: #eef2f7;
-        border-radius: 8px;
-    }
-
-    .flyout-body {
-        flex: 1;
-        padding: 1.5rem;
-        overflow-y: auto;
-        background: #ffffff;
-    }
-
-    .flyout-footer {
-        padding: 1.5rem;
-        border-top: 1px solid var(--border-color, #dce3ec);
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-start;
-    }
-
-    @@media (max-width: 768px) {
-        .flyout {
-            width: 100%;
-            right: -100%;
-        }
-
-        .models-table {
-            font-size: 0.85rem;
-        }
-
-        .model-actions {
-            flex-direction: column;
-        }
-    }
-</style>

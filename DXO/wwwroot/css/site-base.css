@@ -1430,7 +1430,15 @@ a:active {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
+    gap: 1rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
     gap: 0.75rem;
+    justify-content: flex-end;
 }
 
 /* Streaming indicator */
@@ -1946,6 +1954,37 @@ a:active {
     color: var(--success-color);
 }
 
+/* Provider Badge Colors */
+.badge-openai {
+    background: #10a37f;
+    color: #ffffff;
+    border: 1px solid #0d8968;
+}
+
+.badge-azure {
+    background: #0078d4;
+    color: #ffffff;
+    border: 1px solid #0063b1;
+}
+
+.badge-xai {
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #333333;
+}
+
+.badge-google {
+    background: #4285f4;
+    color: #ffffff;
+    border: 1px solid #357ae8;
+}
+
+.badge-anthropic {
+    background: #d97706;
+    color: #ffffff;
+    border: 1px solid #b45309;
+}
+
 .feedback-round-body {
     padding: 1.25rem;
 }
@@ -2102,6 +2141,296 @@ a:active {
     font-size: 0.9375rem;
 }
 
+/* Settings Page - Models Table */
+.settings-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.section-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.models-table-container {
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.models-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.models-table th,
+.models-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.models-table th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.models-table tr:last-child td {
+    border-bottom: none;
+}
+
+.models-table tr:hover {
+    background: var(--bg-tertiary);
+}
+
+.model-endpoint {
+    max-width: 300px;
+}
+
+.endpoint-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.model-apikey {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.editable-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+.editable-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.name-input {
+    min-width: 150px;
+}
+
+.endpoint-input {
+    min-width: 250px;
+    font-size: 0.85rem;
+}
+
+.apikey-input {
+    flex: 1;
+    min-width: 150px;
+    font-size: 0.85rem;
+}
+
+.btn-save {
+    color: var(--success-color);
+}
+
+.btn-delete {
+    color: var(--danger-color);
+}
+
+.model-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Settings Page - Flyout */
+.flyout {
+    position: fixed;
+    top: 0;
+    right: -500px;
+    width: 500px;
+    height: 100vh;
+    background: var(--bg-secondary);
+    box-shadow: -16px 0 40px rgba(15, 23, 42, 0.12);
+    border-left: 1px solid var(--border-color);
+    transition: right 0.3s ease;
+    z-index: 1000;
+}
+
+.flyout.active {
+    right: 0;
+}
+
+.flyout-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.flyout-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-start;
+}
+
+/* Settings Page - Modals (Import/Delete) */
+.file-select-section {
+    margin-bottom: 1.5rem;
+}
+
+.file-select-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text-color);
+}
+
+.file-select-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.selected-file-name {
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.import-warning {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.import-warning strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--warning-color);
+}
+
+.import-warning ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.import-warning li {
+    margin: 0.5rem 0;
+    color: var(--warning-color);
+}
+
+.delete-confirm-text {
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+.delete-model-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-color);
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    word-break: break-word;
+}
+
+.delete-warning {
+    font-size: 0.9rem;
+    color: var(--danger-color);
+    font-style: italic;
+    margin: 0;
+}
+
+/* Progress Overlay */
+.progress-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    backdrop-filter: blur(8px);
+}
+
+.progress-overlay.hidden {
+    display: none;
+}
+
+.progress-content {
+    text-align: center;
+    color: white;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1.5rem;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.progress-message {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+}
+
+.progress-submessage {
+    font-size: 0.95rem;
+    opacity: 0.8;
+    margin: 0;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .persona-cards {
@@ -2143,5 +2472,60 @@ a:active {
 
     .feedback-round-header .feedback-timestamp {
         font-size: 0.75rem;
+    }
+
+    /* Settings Page Mobile */
+    .flyout {
+        width: 100%;
+        right: -100%;
+    }
+
+    .models-table {
+        font-size: 0.85rem;
+    }
+
+    .model-actions {
+        flex-direction: column;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .section-header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .section-header-actions .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .progress-content {
+        padding: 1.5rem;
+        width: 90%;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+    }
+
+    .progress-message {
+        font-size: 1.1rem;
+    }
+
+    .progress-submessage {
+        font-size: 0.9rem;
+    }
+}
+
+/* Touch-friendly improvements for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .editable-input {
+        font-size: 16px; /* Prevents zoom on iOS */
     }
 }
