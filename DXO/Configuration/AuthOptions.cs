@@ -19,6 +19,7 @@ public class AuthOptions
 
 public class EntraIdOptions
 {
+    public bool Enabled { get; set; } = true;
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;
     public string TenantId { get; set; } = string.Empty;
@@ -28,6 +29,7 @@ public class EntraIdOptions
 
 public class MicrosoftAccountOptions
 {
+    public bool Enabled { get; set; } = true;
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;
     public string CallbackPath { get; set; } = "/signin-microsoft";
@@ -35,6 +37,7 @@ public class MicrosoftAccountOptions
 
 public class GoogleOptions
 {
+    public bool Enabled { get; set; } = true;
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;
     public string CallbackPath { get; set; } = "/signin-google";

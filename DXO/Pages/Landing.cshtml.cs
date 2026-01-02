@@ -20,6 +20,9 @@ public class LandingModel : PageModel
     public string? ErrorMessage { get; set; }
 
     public bool AuthenticationEnabled { get; set; }
+    public bool EntraIdEnabled { get; set; }
+    public bool MicrosoftAccountEnabled { get; set; }
+    public bool GoogleEnabled { get; set; }
 
     public LandingModel(ILogger<LandingModel> logger, IOptions<AuthOptions> authOptions)
     {
@@ -30,6 +33,9 @@ public class LandingModel : PageModel
     public async Task OnGetAsync()
     {
         AuthenticationEnabled = _authOptions.Enabled;
+        EntraIdEnabled = _authOptions.EntraId.Enabled;
+        MicrosoftAccountEnabled = _authOptions.MicrosoftAccount.Enabled;
+        GoogleEnabled = _authOptions.Google.Enabled;
         
         // Check if there's an auth error in query string
         if (Request.Query.ContainsKey("authError"))
