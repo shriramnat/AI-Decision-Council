@@ -86,7 +86,7 @@ publish/
 # Application configuration with secrets (if using user secrets)
 appsettings.*.local.json
 secrets.json
-approved-users.json
+DXO/approved-users.json
 
 # Environment files
 .env
