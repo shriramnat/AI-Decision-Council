@@ -114,73 +114,91 @@ if (authConfig.Enabled)
     var logger = LoggerFactory.Create(config => config.AddConsole()).CreateLogger("Startup");
     logger.LogInformation("Authentication is ENABLED - configuring OIDC providers");
 
-    // Add Entra ID (Azure AD) authentication
-    // This also adds Cookie authentication automatically
-    authBuilder.AddMicrosoftIdentityWebApp(options =>
+    // Define common cookie options configuration to ensure consistency
+    Action<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions> configureCookie = options =>
     {
-        options.Instance = authConfig.EntraId.Instance;
-        options.TenantId = authConfig.EntraId.TenantId;
-        options.ClientId = authConfig.EntraId.ClientId;
-        options.ClientSecret = authConfig.EntraId.ClientSecret;
-        options.CallbackPath = authConfig.EntraId.CallbackPath;
-        options.SignedOutCallbackPath = "/signout-callback-oidc";
-        options.SaveTokens = false;
-        
-        // Use authorization code flow (not hybrid flow)
-        // This avoids the need for id_token response type to be enabled
-        options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.Code;
-    }, cookieOptions =>
-    {
-        cookieOptions.Cookie.Name = "DXO.Auth";
-        cookieOptions.LoginPath = "/Landing";
-        cookieOptions.LogoutPath = "/Logout";
+        options.Cookie.Name = "DXO.Auth";
+        options.LoginPath = "/Landing";
+        options.LogoutPath = "/Logout";
         // Don't set AccessDeniedPath here - we handle 403s manually in middleware to prevent redirect loops
-        cookieOptions.ExpireTimeSpan = TimeSpan.FromMinutes(authConfig.Cookie.ExpireTimeMinutes);
-        cookieOptions.SlidingExpiration = true;
-        cookieOptions.Cookie.HttpOnly = true;
-        cookieOptions.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(authConfig.Cookie.ExpireTimeMinutes);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
             ? CookieSecurePolicy.SameAsRequest 
             : CookieSecurePolicy.Always;
-        cookieOptions.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SameSite = SameSiteMode.Lax;
         
         // Override the OnRedirectToAccessDenied event to prevent redirect loops
-        cookieOptions.Events.OnRedirectToAccessDenied = context =>
+        options.Events.OnRedirectToAccessDenied = context =>
         {
             // Sign out the user and redirect to landing with error
             context.Response.Redirect("/Landing?authError=denied");
             return Task.CompletedTask;
         };
-    }, "EntraId");
+    };
+
+    // Add Entra ID (Azure AD) authentication
+    if (authConfig.EntraId.Enabled)
+    {
+        // This also adds Cookie authentication automatically using the provided options
+        authBuilder.AddMicrosoftIdentityWebApp(options =>
+        {
+            options.Instance = authConfig.EntraId.Instance;
+            options.TenantId = authConfig.EntraId.TenantId;
+            options.ClientId = authConfig.EntraId.ClientId;
+            options.ClientSecret = authConfig.EntraId.ClientSecret;
+            options.CallbackPath = authConfig.EntraId.CallbackPath;
+            options.SignedOutCallbackPath = "/signout-callback-oidc";
+            options.SaveTokens = false;
+            
+            // Use authorization code flow (not hybrid flow)
+            // This avoids the need for id_token response type to be enabled
+            options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.Code;
+        }, configureCookie, "EntraId");
+    }
+    else
+    {
+        // If Entra ID is disabled, we must manually configure the cookie authentication
+        // because AddMicrosoftIdentityWebApp won't be called to do it for us.
+        authBuilder.AddCookie(configureCookie);
+    }
 
     // Add Microsoft Account authentication
-    authBuilder.AddMicrosoftAccount("Microsoft", options =>
+    if (authConfig.MicrosoftAccount.Enabled)
     {
-        options.ClientId = authConfig.MicrosoftAccount.ClientId;
-        options.ClientSecret = authConfig.MicrosoftAccount.ClientSecret;
-        options.CallbackPath = authConfig.MicrosoftAccount.CallbackPath;
-        options.SaveTokens = false;
-        
-        // Use /consumers endpoint for personal Microsoft accounts only
-        // This matches the app registration's "PersonalMicrosoftAccount" audience
-        options.AuthorizationEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
-        options.TokenEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
-        
-        options.Scope.Add("openid");
-        options.Scope.Add("profile");
-        options.Scope.Add("email");
-    });
+        authBuilder.AddMicrosoftAccount("Microsoft", options =>
+        {
+            options.ClientId = authConfig.MicrosoftAccount.ClientId;
+            options.ClientSecret = authConfig.MicrosoftAccount.ClientSecret;
+            options.CallbackPath = authConfig.MicrosoftAccount.CallbackPath;
+            options.SaveTokens = false;
+            
+            // Use /consumers endpoint for personal Microsoft accounts only
+            // This matches the app registration's "PersonalMicrosoftAccount" audience
+            options.AuthorizationEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
+            options.TokenEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+            
+            options.Scope.Add("openid");
+            options.Scope.Add("profile");
+            options.Scope.Add("email");
+        });
+    }
 
     // Add Google authentication
-    authBuilder.AddGoogle(options =>
+    if (authConfig.Google.Enabled)
     {
-        options.ClientId = authConfig.Google.ClientId;
-        options.ClientSecret = authConfig.Google.ClientSecret;
-        options.CallbackPath = authConfig.Google.CallbackPath;
-        options.SaveTokens = false;
-        options.Scope.Add("openid");
-        options.Scope.Add("profile");
-        options.Scope.Add("email");
-    });
+        authBuilder.AddGoogle(options =>
+        {
+            options.ClientId = authConfig.Google.ClientId;
+            options.ClientSecret = authConfig.Google.ClientSecret;
+            options.CallbackPath = authConfig.Google.CallbackPath;
+            options.SaveTokens = false;
+            options.Scope.Add("openid");
+            options.Scope.Add("profile");
+            options.Scope.Add("email");
+        });
+    }
 }
 else
 {
