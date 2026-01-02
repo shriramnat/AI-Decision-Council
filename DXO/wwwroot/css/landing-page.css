@@ -1,0 +1,463 @@
+/* AI Decision Council - Stunning Landing Page with 3D & Glassmorphism */
+
+/* ========================================
+   CURSOR INTERACTIVE BACKGROUND
+   ======================================== */
+.landing-page-wrapper {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg, #4a5568 0%, #5a4a6a 25%, #6b5b7b 50%, #5a7a8a 75%, #4a6b7b 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Animated gradient orbs that follow cursor */
+.gradient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.6;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
+
+.gradient-orb-1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+    top: 20%;
+    left: 10%;
+}
+
+.gradient-orb-2 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(79, 172, 254, 0.35) 0%, transparent 70%);
+    top: 60%;
+    right: 15%;
+}
+
+.gradient-orb-3 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(103, 126, 234, 0.35) 0%, transparent 70%);
+    bottom: 10%;
+    left: 50%;
+}
+
+/* Floating particles */
+.particle {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float 20s infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+    25% { transform: translateY(-100px) translateX(50px) rotate(90deg); }
+    50% { transform: translateY(-50px) translateX(100px) rotate(180deg); }
+    75% { transform: translateY(-150px) translateX(25px) rotate(270deg); }
+}
+
+/* ========================================
+   GLASSMORPHISM CONTAINER
+   ======================================== */
+.landing-container {
+    position: relative;
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 1rem;
+    z-index: 10;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ========================================
+   3D HERO SECTION
+   ======================================== */
+.landing-hero {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    perspective: 1000px;
+}
+
+.landing-title-wrapper {
+    transform-style: preserve-3d;
+    animation: float3D 6s ease-in-out infinite;
+}
+
+@keyframes float3D {
+    0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+    25% { transform: translateY(-15px) rotateX(5deg) rotateY(-5deg); }
+    50% { transform: translateY(0) rotateX(0deg) rotateY(5deg); }
+    75% { transform: translateY(-10px) rotateX(-5deg) rotateY(-5deg); }
+}
+
+.landing-title {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 900;
+    color: #ffffff;
+    margin-bottom: 0.75rem;
+    text-shadow: 
+        0 0 20px rgba(255, 255, 255, 0.5),
+        0 0 40px rgba(255, 255, 255, 0.3),
+        0 5px 15px rgba(0, 0, 0, 0.3);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    animation: glow 3s ease-in-out infinite;
+}
+
+@keyframes glow {
+    0%, 100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.3), 0 5px 15px rgba(0, 0, 0, 0.3); }
+    50% { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3); }
+}
+
+.landing-tagline {
+    font-size: clamp(1rem, 3vw, 1.4rem);
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.landing-description {
+    font-size: clamp(0.85rem, 1.8vw, 1rem);
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.5;
+    max-width: 520px;
+    margin: 0 auto;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   GLASSMORPHISM SIGN-IN CARD
+   ======================================== */
+.sign-in-section {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    position: relative;
+}
+
+.sign-in-title {
+    font-size: clamp(1.5rem, 3vw, 1.9rem);
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.sign-in-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: clamp(0.85rem, 1.8vw, 1rem);
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   3D BUTTONS
+   ======================================== */
+.sign-in-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+.sign-in-buttons form {
+    width: 100%;
+}
+
+.btn-sign-in {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transform-style: preserve-3d;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-sign-in::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-sign-in:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-sign-in:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        0 0 30px rgba(255, 255, 255, 0.5);
+}
+
+.btn-sign-in:active {
+    transform: translateY(-2px) scale(1.02);
+}
+
+.sign-in-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.btn-sign-in span {
+    position: relative;
+    z-index: 1;
+}
+
+/* Button color variations */
+.btn-entra {
+    color: #0078d4;
+}
+
+.btn-entra:hover {
+    color: #005a9e;
+}
+
+.btn-microsoft {
+    color: #00a4ef;
+}
+
+.btn-microsoft:hover {
+    color: #0078d4;
+}
+
+.btn-google {
+    color: #4285f4;
+}
+
+.btn-google:hover {
+    color: #1967d2;
+}
+
+.btn-test-access {
+    color: #10a37f;
+    background: rgba(16, 163, 127, 0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(16, 163, 127, 0.5);
+}
+
+.btn-test-access:hover {
+    background: rgba(16, 163, 127, 0.25);
+    border-color: rgba(16, 163, 127, 0.8);
+    color: #0d8566;
+}
+
+/* ========================================
+   ERROR MESSAGE
+   ======================================== */
+.auth-error-message {
+    background: rgba(239, 68, 68, 0.15);
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.2);
+}
+
+.auth-error-icon {
+    font-size: 1.75rem;
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.auth-error-text {
+    color: #ffffff;
+    font-size: 1rem;
+    line-height: 1.6;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+.landing-footer {
+    margin-top: 1.25rem;
+    text-align: center;
+}
+
+.landing-footer-text {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.75rem;
+    line-height: 1.3;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   DEV MODE NOTICE
+   ======================================== */
+.dev-mode-notice {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 193, 7, 0.2);
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 193, 7, 0.5);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.2);
+}
+
+.dev-mode-notice p {
+    margin: 0.75rem 0;
+    color: #ffffff;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.dev-mode-notice p:first-child {
+    font-weight: 700;
+}
+
+.dev-mode-notice code {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+    .landing-container {
+        padding: 2rem 1.5rem;
+    }
+
+    .sign-in-section {
+        padding: 2rem 1.5rem;
+        border-radius: 24px;
+    }
+
+    .btn-sign-in {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .gradient-orb-1,
+    .gradient-orb-2,
+    .gradient-orb-3 {
+        width: 300px;
+        height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .landing-container {
+        padding: 1.5rem 1rem;
+    }
+
+    .sign-in-section {
+        padding: 1.5rem;
+        border-radius: 20px;
+    }
+
+    .landing-hero {
+        margin-bottom: 2.5rem;
+    }
+
+    .gradient-orb-1,
+    .gradient-orb-2,
+    .gradient-orb-3 {
+        width: 250px;
+        height: 250px;
+        filter: blur(60px);
+    }
+}
+
+/* ========================================
+   ANIMATIONS & PERFORMANCE
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Hide default header on landing page and override main-content constraints */
+.header {
+    display: none !important;
+}
+
+#scrollFabContainer {
+    display: none !important;
+}
+
+.main-content {
+    padding: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Hide the default layout footer on landing page */
+.footer {
+    display: none !important;
+}

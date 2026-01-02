@@ -14,6 +14,9 @@ class DXOApp {
         this.dom = {}; // Cache for DOM element references
         this.connectionPromise = null; // Promise for connection ready state
         this.pendingSessionId = null; // Store sessionId if connection not ready
+        this.timerStartTime = null; // Track when timer started
+        this.timerInterval = null; // Track timer interval
+        this.timerElapsedSeconds = 0; // Track total elapsed time
 
         this.init();
     }
@@ -136,8 +139,70 @@ class DXOApp {
             creatorFrequencyPenalty: document.getElementById('creatorFrequencyPenalty'),
 
             // Container elements
-            reviewerCardsContainer: document.getElementById('reviewerCardsContainer')
+            reviewerCardsContainer: document.getElementById('reviewerCardsContainer'),
+            
+            // Timer element
+            sessionTimer: document.getElementById('sessionTimer')
         };
+    }
+
+    /**
+     * Start the session timer
+     */
+    startTimer() {
+        if (this.timerInterval) {
+            return; // Timer already running
+        }
+        
+        this.timerStartTime = Date.now();
+        this.timerElapsedSeconds = 0;
+        this.updateTimerDisplay();
+        
+        this.timerInterval = setInterval(() => {
+            this.timerElapsedSeconds = Math.floor((Date.now() - this.timerStartTime) / 1000);
+            this.updateTimerDisplay();
+        }, 1000);
+    }
+
+    /**
+     * Stop the session timer
+     */
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+    }
+
+    /**
+     * Reset the session timer
+     */
+    resetTimer() {
+        this.stopTimer();
+        this.timerStartTime = null;
+        this.timerElapsedSeconds = 0;
+        this.updateTimerDisplay();
+    }
+
+    /**
+     * Update timer display in MM:SS or HH:MM:SS format
+     */
+    updateTimerDisplay() {
+        if (!this.dom.sessionTimer) return;
+        
+        const seconds = this.timerElapsedSeconds;
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        let display;
+        if (hours > 0) {
+            display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        } else {
+            display = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        this.dom.sessionTimer.textContent = display;
     }
 
     /**
@@ -538,6 +603,7 @@ Authoring rules:
         this.connection.on('SessionStopped', (sessionId, reason) => {
             this.updateStatus('Stopped');
             this.isRunning = false;
+            this.stopTimer();
             this.updateButtonStates();
             this.showToast(`Session stopped: ${reason}`, 'warning');
         });
@@ -545,6 +611,7 @@ Authoring rules:
         this.connection.on('SessionCompleted', (sessionId, finalContent, stopReason) => {
             this.updateStatus('Completed');
             this.isRunning = false;
+            this.stopTimer();
 
             // Populate hidden textarea for copy/download/forms
             this.dom.finalOutput.value = finalContent;
@@ -570,6 +637,11 @@ Authoring rules:
         this.connection.on('IterationStarted', (sessionId, iteration) => {
             this.addIterationHeader(iteration);
             this.updateIterationCount(iteration);
+            
+            // Start timer on first iteration
+            if (iteration === 1) {
+                this.startTimer();
+            }
         });
 
         this.connection.on('IterationCompleted', (sessionId, iteration) => {
@@ -855,7 +927,12 @@ Authoring rules:
 
             const session = await response.json();
             this.currentSessionId = session.sessionId;
-            document.getElementById('sessionId').textContent = session.sessionId.substring(0, 8) + '...';
+            
+            // Update sessionId display if element exists
+            const sessionIdElement = document.getElementById('sessionId');
+            if (sessionIdElement) {
+                sessionIdElement.textContent = session.sessionId.substring(0, 8) + '...';
+            }
 
             // Update URL with sessionId
             this.updateSessionUrl(session.sessionId);
@@ -931,7 +1008,12 @@ Authoring rules:
 
         const session = await response.json();
         this.currentSessionId = session.sessionId;
-        document.getElementById('sessionId').textContent = session.sessionId.substring(0, 8) + '...';
+        
+        // Update sessionId display if element exists
+        const sessionIdElement = document.getElementById('sessionId');
+        if (sessionIdElement) {
+            sessionIdElement.textContent = session.sessionId.substring(0, 8) + '...';
+        }
 
         await this.connection.invoke('JoinSession', this.currentSessionId);
         this.clearTrace();
@@ -964,11 +1046,17 @@ Authoring rules:
         this.currentSessionId = null;
         this.messages = [];
         this.isRunning = false;
+        this.resetTimer();
         this.updateButtonStates();
         this.clearTrace();
         this.updateStatus('Created');
         this.updateIterationCount(0);
-        document.getElementById('sessionId').textContent = '-';
+        
+        // Update sessionId display if element exists
+        const sessionIdElement = document.getElementById('sessionId');
+        if (sessionIdElement) {
+            sessionIdElement.textContent = '-';
+        }
         document.getElementById('finalOutput').value = '';
 
         // Clear URL parameter
@@ -2017,6 +2105,7 @@ Authoring rules:
             this.closeFeedbackModal();
             this.showToast('Feedback submitted - restarting session', 'success');
             this.isRunning = true;
+            this.resetTimer();
             this.updateButtonStates();
             this.updateStatus('Running');
 
@@ -2068,7 +2157,12 @@ Authoring rules:
 
             // Restore session ID
             this.currentSessionId = sessionId;
-            document.getElementById('sessionId').textContent = sessionId.substring(0, 8) + '...';
+            
+            // Update sessionId display if element exists
+            const sessionIdElement = document.getElementById('sessionId');
+            if (sessionIdElement) {
+                sessionIdElement.textContent = sessionId.substring(0, 8) + '...';
+            }
 
             // Restore session settings
             document.getElementById('sessionTopic').value = session.topic || '';

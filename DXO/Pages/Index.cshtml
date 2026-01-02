@@ -141,8 +141,8 @@
         <span id="iterationCount" class="status-value">0 / 8</span>
     </div>
     <div class="status-item">
-        <span class="status-label">Session:</span>
-        <span id="sessionId" class="status-value">-</span>
+        <span class="status-label">Elapsed:</span>
+        <span id="sessionTimer" class="status-value">00:00</span>
     </div>
     <button id="btnViewInteractions" class="btn btn-secondary btn-small">📜 View Agent Interactions</button>
 </section>
@@ -495,11 +495,11 @@
 }
 
 <style>
-    /* Auto-expand trace viewer to fit content */
+    /* Enable scrolling in trace viewer */
     #traceViewer.trace-content {
-        overflow: visible !important;
+        overflow-y: auto !important;
         height: auto !important;
-        max-height: none !important;
+        max-height: 600px !important;
         min-height: 3rem;
         padding-bottom: 0.5rem;
     }

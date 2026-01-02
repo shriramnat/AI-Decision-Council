@@ -587,10 +587,32 @@ a:active {
     margin-top: 1rem;
 }
 
+.feedback-input-section label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
 .feedback-input-section textarea {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 1rem;
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.6;
+    transition: all var(--transition-fast);
+}
+
+.feedback-input-section textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.feedback-input-section textarea::placeholder {
+    color: var(--text-tertiary);
 }
 
 /* Action Buttons Section */
@@ -1889,11 +1911,14 @@ a:active {
     flex: 1;
     overflow-y: auto;
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .lightbox-body .trace-content {
-    height: 100%;
+    flex: 1;
     overflow-y: auto;
+    min-height: 0;
 }
 
 /* SVG Icons */
