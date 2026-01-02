@@ -54,8 +54,16 @@ else
 builder.Services.AddHttpClient();
 
 // Configure Data Protection for API key encryption
-var keysPath = Path.Combine(Directory.GetCurrentDirectory(), "keys");
-Directory.CreateDirectory(keysPath);
+// Use D:\home\keys on Azure Windows, otherwise local keys directory
+var keysPath = builder.Environment.IsProduction() 
+    ? Path.Combine("D:", "home", "keys")
+    : Path.Combine(Directory.GetCurrentDirectory(), "keys");
+
+// Ensure directory exists
+if (!Directory.Exists(keysPath))
+{
+    Directory.CreateDirectory(keysPath);
+}
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
@@ -321,7 +329,12 @@ app.Use(async (context, next) =>
     if (!app.Environment.IsDevelopment())
     {
         context.Response.Headers.Append("Content-Security-Policy", 
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:;");
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "img-src 'self' data:; " +
+            "connect-src 'self' ws: wss:;");
     }
     
     await next();
