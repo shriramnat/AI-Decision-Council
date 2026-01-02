@@ -1,0 +1,15 @@
+# Azure Deployment Ignore File
+# Files and directories listed here will NOT be deployed to Azure Web Apps
+# This overrides .gitignore for deployment purposes
+
+# Exclude local database - Azure will create a fresh one
+*.db
+*.db-shm
+*.db-wal
+
+# Exclude local Data Protection keys - Azure will generate new ones
+keys/
+
+# Do NOT exclude approved-users.json - it's needed for security!
+# (Commented out to ensure it gets deployed)
+# approved-users.json
