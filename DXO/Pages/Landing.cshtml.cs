@@ -10,6 +10,7 @@ using DXO.Configuration;
 namespace DXO.Pages;
 
 [AllowAnonymous]
+[IgnoreAntiforgeryToken]
 public class LandingModel : PageModel
 {
     private readonly ILogger<LandingModel> _logger;
@@ -26,13 +27,32 @@ public class LandingModel : PageModel
         _authOptions = authOptions.Value;
     }
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
         AuthenticationEnabled = _authOptions.Enabled;
         
         // Check if there's an auth error in query string
         if (Request.Query.ContainsKey("authError"))
         {
+            // If user is authenticated but got access denied, sign them out to prevent redirect loop
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var userEmail = User.FindFirst(ClaimTypes.Email)?.Value 
+                    ?? User.FindFirst("email")?.Value 
+                    ?? User.FindFirst("preferred_username")?.Value 
+                    ?? "unknown";
+                
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                
+                _logger.LogInformation("User signed out due to authorization failure: {Email}", userEmail);
+            }
+            
+            // Clear all cookies to ensure clean state for next authentication attempt
+            foreach (var cookie in Request.Cookies.Keys)
+            {
+                Response.Cookies.Delete(cookie);
+            }
+            
             ErrorMessage = "You are not authorized to access this application. If you believe this is an error, please contact the administrator.";
         }
     }

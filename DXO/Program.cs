@@ -126,7 +126,7 @@ if (authConfig.Enabled)
         cookieOptions.Cookie.Name = "DXO.Auth";
         cookieOptions.LoginPath = "/Landing";
         cookieOptions.LogoutPath = "/Logout";
-        cookieOptions.AccessDeniedPath = "/Landing?authError=denied";
+        // Don't set AccessDeniedPath here - we handle 403s manually in middleware to prevent redirect loops
         cookieOptions.ExpireTimeSpan = TimeSpan.FromMinutes(authConfig.Cookie.ExpireTimeMinutes);
         cookieOptions.SlidingExpiration = true;
         cookieOptions.Cookie.HttpOnly = true;
@@ -134,6 +134,14 @@ if (authConfig.Enabled)
             ? CookieSecurePolicy.SameAsRequest 
             : CookieSecurePolicy.Always;
         cookieOptions.Cookie.SameSite = SameSiteMode.Lax;
+        
+        // Override the OnRedirectToAccessDenied event to prevent redirect loops
+        cookieOptions.Events.OnRedirectToAccessDenied = context =>
+        {
+            // Sign out the user and redirect to landing with error
+            context.Response.Redirect("/Landing?authError=denied");
+            return Task.CompletedTask;
+        };
     }, "EntraId");
 
     // Add Microsoft Account authentication
@@ -178,7 +186,7 @@ else
         options.Cookie.Name = "DXO.Auth";
         options.LoginPath = "/Landing";
         options.LogoutPath = "/Logout";
-        options.AccessDeniedPath = "/Landing?authError=denied";
+        // Don't set AccessDeniedPath here - we handle 403s manually in middleware to prevent redirect loops
         options.ExpireTimeSpan = TimeSpan.FromMinutes(authConfig.Cookie.ExpireTimeMinutes);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
@@ -186,6 +194,14 @@ else
             ? CookieSecurePolicy.SameAsRequest 
             : CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        
+        // Override the OnRedirectToAccessDenied event to prevent redirect loops
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            // Sign out the user and redirect to landing with error
+            context.Response.Redirect("/Landing?authError=denied");
+            return Task.CompletedTask;
+        };
     });
 }
 
@@ -326,14 +342,29 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-// Handle authorization failures - redirect to Landing with error
+// Handle authorization failures - sign out user and redirect to Landing with error
 app.Use(async (context, next) =>
 {
     await next();
     
     if (context.Response.StatusCode == 403 && !context.Response.HasStarted)
     {
-        context.Response.Redirect("/Landing?authError=forbidden");
+        // Sign out the user to prevent redirect loop
+        if (context.User?.Identity?.IsAuthenticated == true)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            var userEmail = context.User.FindFirst(ClaimTypes.Email)?.Value 
+                ?? context.User.FindFirst("email")?.Value 
+                ?? "unknown";
+            
+            logger.LogInformation("Signing out unauthorized user: {Email}", userEmail);
+            
+            await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignOutAsync(
+                context, 
+                CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+        
+        context.Response.Redirect("/Landing?authError=denied");
     }
 });
 
