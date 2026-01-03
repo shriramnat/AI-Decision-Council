@@ -114,7 +114,7 @@ Additional security features:
 
 ## Visual Walkthrough
 Open the application. If running locally, go to http://localhost:5000. This is the home page where you will begin your experience.
-![Diagram](/docs/images/landingpage.png)
+![Diagram](/docs/images/LandingPage.png)
 
 Login with your provider of choice to go to the main page. Alternatively you can use the local development auth bypass option to skip this step.
 
