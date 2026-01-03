@@ -35,7 +35,7 @@ This is particularly useful for:
 ### Key Features
 
 - 🧩 **Multi-Agent Review Model**  
-  Run multiple AI reviewers in parallel, each with a defined role.
+  Run multiple AI reviewers in parallel, each with a defined role. The models for the reviewers can be hosted on services like Azure AI Foundry and connected to the app. This enables enterprises to host their own proprietary models for their specific usecases and keep data under their control!
 
 - 🧠 **Creator + Reviewer Pattern**  
   A central “Creator” agent synthesizes reviewer feedback and decides when quality bars are met.
@@ -53,17 +53,24 @@ This is particularly useful for:
 
 ### Prerequisites
 
-.NET 8 SDK - Download from https://dotnet.microsoft.com/en-us/download/dotnet/8.0. Run the following command to verify your installed version.
-  ```powershell
-  dotnet --version
-```
-Optional: Visual Studio, VS Code, or another IDE
+1. .NET 8 SDK - Download from https://dotnet.microsoft.com/en-us/download/dotnet/8.0. Run the following command to verify your installed version.
+      ```powershell
+      dotnet --version
+    ```
+2. AI Models hosted on a service like Azure AI Foundry, or API Keys for services like OpenAI, xAI, Google (Coming soon), Anthropic (Coming soon) etc.
+3. Optional: Visual Studio, VS Code, or another IDE
 
 ### Clone the Repository
   ```powershell
   git clone https://github.com/shriramnat/AI-Decision-Council.git
 cd AI-Decision-Council
 ```
+### Configure authentication for the application
+[Refer to the wiki](https://github.com/shriramnat/AI-Decision-Council/wiki/Authentication-&-Authorization-Setup-Guide#local-development-user-secrets) for details of setting up Environment variables for authentication with Microsoft or Google accounts.
+
+> **Note:** Optionally, you can disable authentication for development environments
+if you plan on running the app locally for development purposes. You do this by setting the `Authentication.Enabled` property to `false` in the `appsettings.json` file. [Refer to the wiki](https://github.com/shriramnat/AI-Decision-Council/wiki/Authentication-&-Authorization-Setup-Guide#local-development-auth-bypass-optional) for more details.
+
 ### Build the Application
   ```powershell
   dotnet restore
@@ -106,7 +113,10 @@ Additional security features:
 - HTTPS enforcement in production
 
 ## Visual Walkthrough
-Open the application. If running locally, go to http://localhost:5000. This is the home page where you will begin your experience
+Open the application. If running locally, go to http://localhost:5000. This is the home page where you will begin your experience.
+![Diagram](/docs/images/landingpage.png)
+
+Login with your provider of choice to go to the main page. Alternatively you can use the local development auth bypass option to skip this step.
 
 ![Diagram](/docs/images/mainpage-empty.png)
 
@@ -143,9 +153,13 @@ You can also customize them by modifying the root prompt, once they are added.
 - Choose between:
   - **Start** (automatically go through iterations until convergence)
   - **Step-Once mode** (manual review between iterations)
-- Start the session and observe deliberation in real time
+- Start the session. Once the Agents have deliberated and the topic has converged, you will see the final output in the final output section.
 
 ![Diagram](/docs/images/mainpage-filled.png)
+
+- You have the opportunity to provide feedback on this output and have the agents continue to refine it by clicking on the "Iterate with Feedback" button.
+
+![Diagram](/docs/images/feedbackscreen.png)
 
 ### Additional Capabilities
 - You can view the Live interaction stream between the agents by clicking the "View Interactions" button. This will give you a pretty good idea of what each of the agents are sending out in each iteration.
@@ -159,6 +173,8 @@ You can also customize them by modifying the root prompt, once they are added.
   - Reviewer feedback summaries with approval status
   - Your own feedback submissions for audit trail
   - Timestamps for all feedback activities
+
+![Diagram](/docs/images/feedbackhistory.png)
 
 This feature enables audit-friendly tracking of the entire decision-making process, allowing you to provide input on specific iterations and review the complete history of the Council's work.
 

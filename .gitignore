@@ -120,3 +120,6 @@ certificates/
 # Contains encryption keys for API keys and other sensitive data
 keys/
 *.xml
+
+# Documentation & scripts to ignore
+Enhancements/*
