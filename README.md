@@ -1,5 +1,5 @@
 # 🧠 AI Decision Council
-Link to repo: https://github.com/shriramnat/AI-Review-Council
+[Link to the repo](https://github.com/shriramnat/AI-Decision-Council)
 ## 📚 Table of Contents
 
 - [Overview](#Overview)
