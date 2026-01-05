@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
+using Polly;
+using Polly.Extensions.Http;
 using DXO.Configuration;
 using DXO.Data;
 using DXO.Hubs;
@@ -22,9 +24,8 @@ using DXO.Services.XAI;
 using DXO.Services.OpenAI;
 using DXO.Services.Orchestration;
 using DXO.Services.Models;
+using DXO.Services.NativeAgent;
 using DXO.Services.Security;
-using Polly;
-using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,6 +90,7 @@ builder.Services.AddSingleton<IXAIService, XAIService>();
 builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 builder.Services.AddScoped<IModelInitializationService, ModelInitializationService>();
 builder.Services.AddScoped<IOrchestrationService, OrchestrationService>();
+builder.Services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
 
 // Register authorization services
 builder.Services.AddSingleton<IApprovedListService, FileApprovedListService>();
@@ -317,6 +319,13 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
+// Validate Native Agent configuration at startup
+var loggerFactory = LoggerFactory.Create(config => config.AddConsole());
+var startupLogger = loggerFactory.CreateLogger("Startup");
+
+ValidateNativeAgentConfiguration(dxoConfig, startupLogger);
+
 
 
 var app = builder.Build();
@@ -851,8 +860,87 @@ app.MapDelete("/api/models/{id:int}", async (HttpContext httpContext, int id, IM
     return deleted ? Results.Ok(new { success = true }) : Results.NotFound();
 }).RequireRateLimiting("ApiPolicy");
 
-app.Run();
+// Native Agent Override endpoints
+app.MapPost("/api/native-agent/override", async (HttpContext httpContext, SaveNativeAgentOverrideRequest request, IModelManagementService modelService, DxoDbContext dbContext, ILogger<Program> logger, CancellationToken ct) =>
+{
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    try
+    {
+        // Update or create user settings with the selected model
+        var userSettings = await dbContext.UserSettings.FirstOrDefaultAsync(u => u.UserId == userEmail, ct);
+        if (userSettings == null)
+        {
+            userSettings = new UserSettings { UserId = userEmail, NativeAgentModelId = request.ModelId };
+            dbContext.UserSettings.Add(userSettings);
+        }
+        else
+        {
+            userSettings.NativeAgentModelId = request.ModelId;
+        }
+        
+        await dbContext.SaveChangesAsync(ct);
+        return Results.Ok(new { success = true });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error saving Native Agent override for user {UserEmail}", userEmail);
+        return Results.BadRequest(new { success = false, error = ex.Message });
+    }
+}).RequireRateLimiting("ApiPolicy");
 
+app.MapDelete("/api/native-agent/override", async (HttpContext httpContext, DxoDbContext dbContext, ILogger<Program> logger, CancellationToken ct) =>
+{
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    try
+    {
+        var userSettings = await dbContext.UserSettings.FirstOrDefaultAsync(u => u.UserId == userEmail, ct);
+        if (userSettings != null)
+        {
+            userSettings.NativeAgentModelId = null;
+            await dbContext.SaveChangesAsync(ct);
+        }
+        
+        return Results.Ok(new { success = true });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error removing Native Agent override for user {UserEmail}", userEmail);
+        return Results.BadRequest(new { success = false, error = ex.Message });
+    }
+}).RequireRateLimiting("ApiPolicy");
+
+app.MapPost("/api/native-agent/test", async (HttpContext httpContext, IReviewerRecommendationService recommendationService, ILogger<Program> logger, CancellationToken ct) =>
+{
+    var userEmail = GetUserEmail(httpContext);
+    if (userEmail == null)
+        return Results.Unauthorized();
+    
+    try
+    {
+        // Try to get Native Agent status - if it returns configured=true, connection is valid
+        var (configured, usingDefault, modelName) = await recommendationService.GetNativeAgentStatusAsync(userEmail);
+        
+        if (!configured)
+        {
+            return Results.Ok(new { success = false, error = "Native Agent is not configured" });
+        }
+        
+        return Results.Ok(new { success = true, modelName });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error testing Native Agent connection for user {UserEmail}", userEmail);
+        return Results.Ok(new { success = false, error = ex.Message });
+    }
+}).RequireRateLimiting("ApiPolicy");
+
+app.Run();
 // Helper method to extract user email from claims
 static string? GetUserEmail(HttpContext context)
 {
@@ -870,4 +958,54 @@ static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int maxRetries)
         .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
         .WaitAndRetryAsync(maxRetries, retryAttempt => 
             TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+}
+
+// Validate Native Agent configuration at startup
+static void ValidateNativeAgentConfiguration(DxoOptions options, ILogger logger)
+{
+    if (!options.NativeAgent.Enabled)
+    {
+        logger.LogInformation("ℹ️  Native Agent is disabled");
+        return;
+    }
+
+    var issues = new List<string>();
+
+    if (string.IsNullOrWhiteSpace(options.NativeAgent.Endpoint))
+    {
+        issues.Add("Endpoint is not configured");
+    }
+
+    if (string.IsNullOrWhiteSpace(options.NativeAgent.ModelName))
+    {
+        issues.Add("ModelName is not configured");
+    }
+
+    // Validate ModelProvider enum value
+    try
+    {
+        var provider = ModelProviderExtensions.FromString(options.NativeAgent.ModelProvider);
+        logger.LogInformation("ℹ️  Native Agent configured with provider: {Provider}", provider.ToDisplayString());
+    }
+    catch
+    {
+        issues.Add($"Invalid ModelProvider: {options.NativeAgent.ModelProvider}");
+    }
+
+    if (issues.Any())
+    {
+        logger.LogWarning(
+            "⚠️  Native Agent configuration incomplete - AI reviewer recommendations will not be available. Issues: {Issues}",
+            string.Join("; ", issues));
+    }
+    else
+    {
+        logger.LogInformation("✅ Native Agent configuration validated successfully");
+    }
+}
+
+// Helper classes for API requests
+class SaveNativeAgentOverrideRequest
+{
+    public int ModelId { get; set; }
 }

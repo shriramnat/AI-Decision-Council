@@ -93,9 +93,12 @@
             </div>
 
             <!-- Add Reviewer Button -->
-            <div class="add-reviewer-container">
+            <div class="add-reviewer-container" style="display: flex; gap: 1rem; align-items: center;">
                 <button id="btnAddReviewer" class="btn btn-secondary btn-add-reviewer">
                     <span class="add-icon">+</span> Add a Reviewer
+                </button>
+                <button id="btnConfigureWithAI" class="btn btn-secondary btn-add-reviewer" style="display: none;">
+                    <span class="ai-icon">✨</span> Configure with AI
                 </button>
             </div>
         </div>
@@ -367,6 +370,58 @@
     </div>
 </div>
 
+<!-- AI Recommendation Confirmation Modal -->
+<div id="aiRecommendationModal" class="lightbox-overlay hidden">
+    <div class="lightbox-content">
+        <div class="lightbox-header">
+            <h2>✨ AI-Recommended Reviewers</h2>
+            <button class="lightbox-close" onclick="dxoApp.closeAIRecommendationModal()">&times;</button>
+        </div>
+        <div class="lightbox-body">
+            <div class="ai-recommendation-content">
+                <p class="recommendation-info">The AI analyzed your topic and recommended these expert reviewers. You can uncheck any reviewer or remove them after adding.</p>
+                <div id="recommendedReviewersList" class="recommended-reviewers-list">
+                    <!-- Reviewers will be loaded here -->
+                </div>
+                <div class="recommendation-actions">
+                    <button class="btn btn-secondary" onclick="dxoApp.closeAIRecommendationModal()">Cancel</button>
+                    <button id="btnConfirmAIRecommendation" class="btn btn-primary" onclick="dxoApp.confirmAIRecommendation()">Add Selected Reviewers</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Recommendation Error Modal -->
+<div id="aiRecommendationErrorModal" class="lightbox-overlay hidden">
+    <div class="lightbox-content">
+        <div class="lightbox-header">
+            <h2>⚠️ Recommendation Failed</h2>
+            <button class="lightbox-close" onclick="dxoApp.closeAIRecommendationErrorModal()">&times;</button>
+        </div>
+        <div class="lightbox-body">
+            <div class="ai-error-content">
+                <p class="error-message">The AI agent couldn't provide recommendations. Please add reviewers manually.</p>
+                <div id="errorDetailsContainer" style="display: none;">
+                    <button class="btn btn-small btn-secondary" onclick="dxoApp.toggleErrorDetails()">Hide details</button>
+                    <div id="errorDetailsContent" class="error-details">
+                        <p><strong>Error Code:</strong> <code id="errorCode"></code></p>
+                        <p><strong>Message:</strong> <code id="errorMsg"></code></p>
+                        <details>
+                            <summary>Stack Trace</summary>
+                            <pre id="errorStackTrace" style="overflow-x: auto; max-height: 200px;"></pre>
+                        </details>
+                    </div>
+                </div>
+                <button id="btnToggleErrorDetails" class="btn btn-small btn-secondary" onclick="dxoApp.toggleErrorDetails()" style="display: block;">View details</button>
+                <div class="error-actions">
+                    <button class="btn btn-primary" onclick="dxoApp.closeAIRecommendationErrorModal()">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Export Modal -->
 <div id="exportModal" class="modal hidden">
     <div class="modal-content">
@@ -502,5 +557,105 @@
         max-height: 600px !important;
         min-height: 3rem;
         padding-bottom: 0.5rem;
+    }
+
+    /* AI Recommendation Styles */
+    .ai-recommendation-content {
+        padding: 1.5rem;
+    }
+
+    .recommendation-info {
+        margin-bottom: 1.5rem;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .recommended-reviewers-list {
+        margin-bottom: 1.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .recommended-reviewer-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background-color: var(--bg-secondary);
+        border-radius: 0.25rem;
+        gap: 1rem;
+    }
+
+    .recommended-reviewer-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .reviewer-info {
+        flex: 1;
+    }
+
+    .reviewer-name {
+        font-weight: 500;
+        color: var(--text-color);
+        margin-bottom: 0.25rem;
+    }
+
+    .reviewer-role {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .recommendation-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .ai-error-content {
+        padding: 1.5rem;
+    }
+
+    .error-message {
+        margin-bottom: 1.5rem;
+        color: var(--error-color);
+        font-weight: 500;
+    }
+
+    .error-details {
+        background-color: var(--bg-secondary);
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+
+    .error-details code {
+        color: var(--error-color);
+        word-break: break-all;
+    }
+
+    .error-details pre {
+        color: var(--text-secondary);
+        margin: 0.5rem 0 0 0;
+        padding: 0.5rem;
+        background-color: var(--bg-color);
+        border-radius: 0.25rem;
+    }
+
+    .error-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    #btnToggleErrorDetails {
+        display: block;
+        margin-bottom: 1rem;
     }
 </style>

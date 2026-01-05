@@ -15,6 +15,7 @@ public class DxoOptions
     public OrchestrationOptions Orchestration { get; set; } = new();
     public PersistenceOptions Persistence { get; set; } = new();
     public RateLimitingOptions RateLimiting { get; set; } = new();
+    public NativeAgentOptions NativeAgent { get; set; } = new();
 }
 
 /// <summary>
@@ -70,3 +71,47 @@ public class RateLimitingOptions
     public int PermitLimit { get; set; } = 10;
     public int WindowSeconds { get; set; } = 60;
 }
+
+/// <summary>
+/// Native Agent configuration options for AI-powered features
+/// </summary>
+public class NativeAgentOptions
+{
+    public bool Enabled { get; set; } = false;
+    public string ModelProvider { get; set; } = "OpenAI";
+    public string Endpoint { get; set; } = string.Empty;
+    public string? ApiKey { get; set; }
+    public string ModelName { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Scriban template for reviewer recommendation prompt with {{topic}} and {{reviewers}} placeholders
+    /// </summary>
+    public string RecommendationPrompt { get; set; } = @"You are an intelligent agent tasked with analyzing discussion topics and recommending appropriate expert reviewers.
+
+Analyze the following topic and select up to 5 most relevant reviewers from the available options.
+
+## Topic:
+{{topic}}
+
+## Available Reviewers:
+{{for reviewer in reviewers}}
+- **{{reviewer.agentId}}** ({{reviewer.role}}, Category: {{reviewer.category}})
+  {{reviewer.promptPreview}}
+
+{{end}}
+
+## Task:
+Evaluate which reviewers would be most relevant and beneficial for discussing this topic. Consider:
+1. Relevance to the topic domain
+2. Diversity of perspectives
+3. Complementary expertise
+4. Coverage of different aspects (technical, structural, domain, decision-readiness, risk, etc.)
+
+Return ONLY a valid JSON response in this exact format (no additional text):
+{
+  ""recommendedReviewers"": [""agentId1"", ""agentId2"", ""agentId3"", ""agentId4"", ""agentId5""]
+}
+
+Provide up to 5 reviewer IDs. Use only IDs from the available list above.";
+}
+

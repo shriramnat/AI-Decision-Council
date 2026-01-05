@@ -16,6 +16,7 @@ public class DxoDbContext : DbContext
     public DbSet<Message> Messages { get; set; } = null!;
     public DbSet<ConfiguredModel> ConfiguredModels { get; set; } = null!;
     public DbSet<FeedbackRound> FeedbackRounds { get; set; } = null!;
+    public DbSet<UserSettings> UserSettings { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +82,16 @@ public class DxoDbContext : DbContext
                   .WithMany(s => s.FeedbackRounds)
                   .HasForeignKey(e => e.SessionId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserSettings configuration
+        modelBuilder.Entity<UserSettings>(entity =>
+        {
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.UserId).HasMaxLength(200);
+            entity.Property(e => e.NativeAgentModelId).IsRequired(false);
+            
+            entity.HasIndex(e => e.UserId).IsUnique();
         });
     }
 }

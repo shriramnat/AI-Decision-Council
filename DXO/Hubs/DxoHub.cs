@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using DXO.Models;
+using DXO.Services.NativeAgent;
 
 namespace DXO.Hubs;
 
@@ -34,10 +35,12 @@ public interface IDxoHubClient
 public class DxoHub : Hub<IDxoHubClient>
 {
     private readonly ILogger<DxoHub> _logger;
+    private readonly IReviewerRecommendationService? _recommendationService;
 
-    public DxoHub(ILogger<DxoHub> logger)
+    public DxoHub(ILogger<DxoHub> logger, IReviewerRecommendationService? recommendationService = null)
     {
         _logger = logger;
+        _recommendationService = recommendationService;
     }
 
     /// <summary>
@@ -75,5 +78,103 @@ public class DxoHub : Hub<IDxoHubClient>
             _logger.LogDebug("Client {ConnectionId} disconnected", Context.ConnectionId);
         }
         await base.OnDisconnectedAsync(exception);
+    }
+
+    /// <summary>
+    /// Gets recommended reviewers for a given topic
+    /// </summary>
+    public async Task<GetReviewerRecommendationsResponse> GetReviewerRecommendations(string topic)
+    {
+        if (_recommendationService == null)
+        {
+            return new GetReviewerRecommendationsResponse
+            {
+                Success = false,
+                ErrorCode = "SRV-001",
+                ErrorMessage = "Recommendation service not configured",
+                Reviewers = new List<ReviewerTemplateDto>()
+            };
+        }
+
+        try
+        {
+            var userId = Context.User?.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
+                      ?? Context.User?.FindFirst("email")?.Value
+                      ?? "unknown";
+
+            var reviewers = await _recommendationService.GetRecommendedReviewersAsync(topic, userId);
+
+            return new GetReviewerRecommendationsResponse
+            {
+                Success = true,
+                Reviewers = reviewers
+            };
+        }
+        catch (RecommendationException ex)
+        {
+            _logger.LogError(ex, "Recommendation failed with error code {ErrorCode}", ex.ErrorCode);
+            return new GetReviewerRecommendationsResponse
+            {
+                Success = false,
+                ErrorCode = ex.ErrorCode,
+                ErrorMessage = ex.Message,
+                Reviewers = new List<ReviewerTemplateDto>()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during recommendation");
+            var errorCode = "ERR-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
+            return new GetReviewerRecommendationsResponse
+            {
+                Success = false,
+                ErrorCode = errorCode,
+                ErrorMessage = "An unexpected error occurred",
+                Reviewers = new List<ReviewerTemplateDto>(),
+                StackTrace = ex.StackTrace
+            };
+        }
+    }
+
+    /// <summary>
+    /// Gets the status of Native Agent configuration
+    /// </summary>
+    public async Task<GetNativeAgentStatusResponse> GetNativeAgentStatus()
+    {
+        if (_recommendationService == null)
+        {
+            return new GetNativeAgentStatusResponse
+            {
+                Configured = false,
+                UsingDefault = false,
+                ModelName = null
+            };
+        }
+
+        try
+        {
+            var userId = Context.User?.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
+                      ?? Context.User?.FindFirst("email")?.Value
+                      ?? "unknown";
+
+            var (configured, usingDefault, modelName) = await _recommendationService.GetNativeAgentStatusAsync(userId);
+
+            return new GetNativeAgentStatusResponse
+            {
+                Configured = configured,
+                UsingDefault = usingDefault,
+                ModelName = modelName
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting Native Agent status");
+            return new GetNativeAgentStatusResponse
+            {
+                Configured = false,
+                UsingDefault = false,
+                ModelName = null
+            };
+        }
     }
 }

@@ -49,11 +49,49 @@ class DXOApp {
         // Check model configuration status (non-blocking)
         this.checkModelConfigurationStatus();
 
+        // Check Native Agent status and show/hide "Configure with AI" button
+        await this.checkNativeAgentButtonVisibility();
+
         // Wait for connection to be ready before restoring session
         if (this.pendingSessionId) {
             await this.waitForConnection();
             await this.restoreSession(this.pendingSessionId);
             this.pendingSessionId = null;
+        }
+    }
+
+    /**
+     * Check Native Agent status and show/hide "Configure with AI" button
+     */
+    async checkNativeAgentButtonVisibility() {
+        const btn = document.getElementById('btnConfigureWithAI');
+        if (!btn) {
+            console.log('[Native Agent] Button element not found in DOM');
+            return;
+        }
+
+        console.log('[Native Agent] Checking Native Agent status...');
+
+        try {
+            // Wait for SignalR connection
+            await this.waitForConnection();
+            console.log('[Native Agent] SignalR connection established');
+
+            // Call Hub method to get status
+            const status = await this.connection.invoke('GetNativeAgentStatus');
+            console.log('[Native Agent] Status received:', status);
+
+            if (status && status.configured) {
+                console.log('[Native Agent] Native Agent is configured, showing button');
+                console.log(`[Native Agent] Using: ${status.usingDefault ? 'Default' : 'User Override'} - ${status.modelName}`);
+                btn.style.display = 'inline-block';
+            } else {
+                console.log('[Native Agent] Native Agent NOT configured, hiding button');
+                btn.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('[Native Agent] Error checking status:', error);
+            btn.style.display = 'none';
         }
     }
 
@@ -764,6 +802,14 @@ Authoring rules:
             this.openReviewerSelector();
         });
 
+        // Configure with AI button
+        const btnConfigureWithAI = document.getElementById('btnConfigureWithAI');
+        if (btnConfigureWithAI) {
+            btnConfigureWithAI.addEventListener('click', () => {
+                this.getAIRecommendations();
+            });
+        }
+
         // Output buttons
         document.getElementById('btnCopyOutput').addEventListener('click', () => this.copyOutput());
         document.getElementById('btnDownloadOutput').addEventListener('click', () => this.showExportModal('finalOutput'));
@@ -771,6 +817,28 @@ Authoring rules:
         // Feedback button
         document.getElementById('btnIterateWithFeedback').addEventListener('click', () => this.openFeedbackModal());
         document.getElementById('btnSubmitFeedback').addEventListener('click', () => this.submitIterationFeedback());
+
+        // AI Recommendation modal buttons
+        const btnCloseAIModal = document.getElementById('btnCloseAIModal');
+        if (btnCloseAIModal) {
+            btnCloseAIModal.addEventListener('click', () => this.closeAIRecommendationModal());
+        }
+        
+        const btnConfirmAI = document.getElementById('btnConfirmAI');
+        if (btnConfirmAI) {
+            btnConfirmAI.addEventListener('click', () => this.confirmAIRecommendation());
+        }
+
+        // AI Error modal buttons
+        const btnCloseErrorModal = document.getElementById('btnCloseAIErrorModal');
+        if (btnCloseErrorModal) {
+            btnCloseErrorModal.addEventListener('click', () => this.closeAIRecommendationErrorModal());
+        }
+
+        const btnToggleErrorDetails = document.getElementById('btnToggleErrorDetails');
+        if (btnToggleErrorDetails) {
+            btnToggleErrorDetails.addEventListener('click', () => this.toggleErrorDetails());
+        }
 
         // Export modal buttons
         document.getElementById('btnExportOption1').addEventListener('click', () => this.handleExportOption1());
@@ -2058,6 +2126,164 @@ Authoring rules:
     // Close feedback modal
     closeFeedbackModal() {
         document.getElementById('feedbackModal').classList.add('hidden');
+    }
+
+    // Open AI recommendation modal
+    openAIRecommendationModal() {
+        document.getElementById('aiRecommendationModal').classList.remove('hidden');
+    }
+
+    // Close AI recommendation modal
+    closeAIRecommendationModal() {
+        document.getElementById('aiRecommendationModal').classList.add('hidden');
+    }
+
+    // Open AI recommendation error modal
+    openAIRecommendationErrorModal(errorCode, errorMessage, stackTrace) {
+        document.getElementById('errorCode').textContent = errorCode || 'UNKNOWN';
+        document.getElementById('errorMsg').textContent = errorMessage || 'Unknown error';
+        if (stackTrace) {
+            document.getElementById('errorStackTrace').textContent = stackTrace;
+        } else {
+            const detailsElement = document.querySelector('details');
+            if (detailsElement && detailsElement.style) {
+                detailsElement.style.display = 'none';
+            }
+        }
+        document.getElementById('aiRecommendationErrorModal').classList.remove('hidden');
+        document.getElementById('btnToggleErrorDetails').style.display = 'block';
+    }
+
+    // Close AI recommendation error modal
+    closeAIRecommendationErrorModal() {
+        document.getElementById('aiRecommendationErrorModal').classList.add('hidden');
+    }
+
+    // Toggle error details visibility
+    toggleErrorDetails() {
+        const container = document.getElementById('errorDetailsContainer');
+        const toggleBtn = document.getElementById('btnToggleErrorDetails');
+        
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            toggleBtn.textContent = 'Hide details';
+        } else {
+            container.style.display = 'none';
+            toggleBtn.textContent = 'View details';
+        }
+    }
+
+    // Get recommendations from AI
+    async getAIRecommendations() {
+        const topic = document.getElementById('sessionTopic').value.trim();
+        
+        // Validate topic is not empty FIRST before any API calls
+        if (!topic) {
+            this.showToast('Please enter a topic before requesting AI recommendations', 'warning');
+            return;
+        }
+
+        // Show loading state
+        this.showToast('Analyzing topic with AI...', 'info');
+        
+        // Check if Native Agent is configured
+        try {
+            const status = await this.connection.invoke('GetNativeAgentStatus');
+            if (!status.configured) {
+                this.showToast('Native Agent is not configured', 'error');
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking Native Agent status:', error);
+            this.showToast('Unable to check Native Agent configuration', 'error');
+            return;
+        }
+        
+        try {
+            const response = await this.connection.invoke('GetReviewerRecommendations', topic);
+            
+            if (response.success) {
+                // Show confirmation modal with recommendations
+                this.displayAIRecommendations(response.reviewers);
+                this.openAIRecommendationModal();
+            } else {
+                // Show error modal
+                this.openAIRecommendationErrorModal(response.errorCode, response.errorMessage, response.stackTrace);
+            }
+        } catch (error) {
+            console.error('Error getting recommendations:', error);
+            this.openAIRecommendationErrorModal('ERR-UNKNOWN', 'Failed to get recommendations: ' + error.message, error.stack);
+        }
+    }
+
+    // Display AI recommendations in the modal
+    displayAIRecommendations(reviewers) {
+        const listContainer = document.getElementById('recommendedReviewersList');
+        listContainer.innerHTML = '';
+
+        reviewers.forEach((reviewer, index) => {
+            const item = document.createElement('div');
+            item.className = 'recommended-reviewer-item';
+            item.innerHTML = `
+                <input type="checkbox" id="reviewer-${index}" checked />
+                <div class="reviewer-info">
+                    <div class="reviewer-name">${this.escapeHtml(reviewer.agentId)}</div>
+                    <div class="reviewer-role">${this.escapeHtml(reviewer.role)}</div>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+
+        // Store the reviewers for later use
+        this.recommendedReviewers = reviewers;
+    }
+
+    // Confirm and add recommended reviewers
+    async confirmAIRecommendation() {
+        const listContainer = document.getElementById('recommendedReviewersList');
+        const checkboxes = listContainer.querySelectorAll('input[type="checkbox"]');
+        const selectedIndices = [];
+
+        checkboxes.forEach((checkbox, index) => {
+            if (checkbox.checked) {
+                selectedIndices.push(index);
+            }
+        });
+
+        // Add selected reviewers
+        selectedIndices.forEach(index => {
+            const reviewer = this.recommendedReviewers[index];
+            // Find the template with matching agentId
+            this.addReviewerByAgentId(reviewer.agentId);
+        });
+
+        this.closeAIRecommendationModal();
+        this.showToast(`Added ${selectedIndices.length} reviewer${selectedIndices.length !== 1 ? 's' : ''}`, 'success');
+    }
+
+    // Add reviewer by agent ID (find and load from agentconfigurations.json)
+    async addReviewerByAgentId(agentId) {
+        try {
+            const response = await fetch('/agentconfigurations.json');
+            const config = await response.json();
+            const reviewerTemplates = config.agents?.reviewers || [];
+            
+            const template = reviewerTemplates.find(r => r.agentId === agentId);
+            if (template) {
+                const formattedPrompt = template.prompt.replace(/\\n/g, '\n');
+                this.addReviewerWithTemplate(template, formattedPrompt);
+            } else {
+                console.warn(`Reviewer template not found for agentId: ${agentId}`);
+            }
+        } catch (error) {
+            console.error('Error adding reviewer by agentId:', error);
+        }
+    }
+
+    // Helper to add reviewer with full template data
+    addReviewerWithTemplate(template, prompt) {
+        const reviewerNumber = this.reviewers.length + 1;
+        this.addReviewer(template.role, prompt);
     }
 
     // Submit iteration feedback

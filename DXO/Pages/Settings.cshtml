@@ -104,6 +104,27 @@
                 </div>
             }
             
+            <!-- Native Agent Configuration Section -->
+            <div class="settings-section">
+                <div class="section-header">
+                    <div class="section-title-with-help">
+                        <h3>Native Agent Configuration</h3>
+                        <span class="info-icon" title="The Native Agent powers AI-assisted features like automatic reviewer recommendations. It analyzes your session topics to suggest relevant expert reviewers.">ℹ️</span>
+                    </div>
+                    <div id="nativeAgentStatusContainer" class="section-status">
+                        <span id="nativeAgentStatusText" class="status-loading">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="nativeAgentContentArea" class="native-agent-content">
+                    <!-- Status will be loaded dynamically -->
+                    <div class="loading-state">
+                        <p>Loading Native Agent configuration...</p>
+                    </div>
+                </div>
+            </div>
+            
+
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">Back to Home</button>
             </div>
@@ -679,5 +700,172 @@
                 closeModelFlyout();
             }
         });
+
+        // Load Native Agent configuration status on page load
+        async function loadNativeAgentStatus() {
+            try {
+                const response = await settingsConnection.invoke('GetNativeAgentStatus');
+                updateNativeAgentUI(response);
+            } catch (error) {
+                console.error('Error loading Native Agent status:', error);
+                document.getElementById('nativeAgentContentArea').innerHTML = `
+                    <div class="error-state">
+                        <p>Error loading Native Agent configuration. Please refresh the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateNativeAgentUI(status) {
+            const contentArea = document.getElementById('nativeAgentContentArea');
+            const statusText = document.getElementById('nativeAgentStatusText');
+
+            if (status.configured) {
+                let statusHTML = '';
+                if (status.usingDefault) {
+                    statusHTML = `<span class="status-badge status-success">✓ Using default configuration</span>`;
+                } else {
+                    statusHTML = `<span class="status-badge status-info">✓ Custom configuration</span>`;
+                }
+                statusText.innerHTML = statusHTML;
+
+                const modelInfo = status.modelName ? `Model: <strong>${escapeHtml(status.modelName)}</strong>` : 'Configured';
+                
+                contentArea.innerHTML = `
+                    <div class="native-agent-config-display">
+                        <p class="config-info">${modelInfo}</p>
+                        <div class="config-actions">
+                            ${status.usingDefault ? `
+                                <button class="btn btn-secondary" onclick="configureNativeAgentOverride()">
+                                    Override with Custom Model
+                                </button>
+                            ` : `
+                                <button class="btn btn-secondary" onclick="editNativeAgentOverride()">
+                                    Edit Configuration
+                                </button>
+                                <button class="btn btn-secondary" onclick="removeNativeAgentOverride()">
+                                    Remove Override
+                                </button>
+                            `}
+                            <button class="btn btn-secondary" onclick="testNativeAgentConnection()">
+                                Test Connection
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                statusText.innerHTML = `<span class="status-badge status-warning">⚠ Not configured</span>`;
+                contentArea.innerHTML = `
+                    <div class="native-agent-not-configured">
+                        <p class="info-text">No Native Agent configured. Configure one to enable AI reviewer recommendations.</p>
+                        <button class="btn btn-primary" onclick="configureNativeAgentOverride()">
+                            Configure Native Agent
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function configureNativeAgentOverride() {
+            // Open the model configuration flyout for Native Agent
+            window.isNativeAgentConfig = true;
+            openModelFlyout();
+            document.getElementById('flyoutTitle').textContent = 'Configure Native Agent';
+        }
+
+        function editNativeAgentOverride() {
+            // Load existing Native Agent configuration and open flyout
+            window.isNativeAgentConfig = true;
+            window.nativeAgentModelId = undefined; // Will be loaded after fetching override
+            openModelFlyout();
+            document.getElementById('flyoutTitle').textContent = 'Edit Native Agent Configuration';
+        }
+
+        function removeNativeAgentOverride() {
+            if (confirm('Are you sure you want to remove the Native Agent override and revert to default configuration?')) {
+                // Call API to remove override
+                fetch('/api/native-agent/override', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        showToast('Native Agent override removed', 'success');
+                        loadNativeAgentStatus();
+                    } else {
+                        showToast('Failed to remove Native Agent override', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error removing Native Agent override:', error);
+                    showToast('Error removing Native Agent override', 'error');
+                });
+            }
+        }
+
+        function testNativeAgentConnection() {
+            const statusContainer = document.getElementById('nativeAgentStatusContainer');
+            if (!statusContainer) return;
+
+            showToast('Testing Native Agent connection...', 'info');
+            
+            fetch('/api/native-agent/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Native Agent connection successful!', 'success');
+                } else {
+                    showToast('Native Agent connection failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error testing Native Agent:', error);
+                showToast('Error testing Native Agent: ' + error.message, 'error');
+            });
+        }
+
+        // SignalR connection for Settings page
+        let settingsConnection = null;
+
+        async function initializeSignalR() {
+            try {
+                settingsConnection = new signalR.HubConnectionBuilder()
+                    .withUrl('/hubs/dxo')
+                    .withAutomaticReconnect()
+                    .build();
+
+                await settingsConnection.start();
+                console.log('Settings SignalR Connected');
+                return true;
+            } catch (err) {
+                console.error('Settings SignalR Connection Error:', err);
+                return false;
+            }
+        }
+
+        // Initialize Native Agent status when page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize SignalR connection
+            const connected = await initializeSignalR();
+            if (connected) {
+                loadNativeAgentStatus();
+            } else {
+                console.warn('Could not connect to SignalR hub for Native Agent status');
+            }
+        });
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
 </script>
 }
