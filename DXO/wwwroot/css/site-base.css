@@ -2543,11 +2543,18 @@ a:active {
         font-size: 1.1rem;
     }
 
+}
+
 /* Native Agent Configuration */
 .section-title-with-help {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.section-title-with-help h3 {
+    margin: 0;
+    white-space: nowrap;
 }
 
 .info-icon {
@@ -2562,7 +2569,6 @@ a:active {
 }
 
 .section-status {
-    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 1rem;

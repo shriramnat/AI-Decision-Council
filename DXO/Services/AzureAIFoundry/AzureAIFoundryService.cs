@@ -79,16 +79,33 @@ public class AzureAIFoundryService : IAzureAIFoundryService
         using var httpClient = _httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("api-key", apiKey);
 
-        var requestBody = new
+        // Build request body dynamically, only including non-default parameters
+        // This ensures compatibility with models that don't support certain parameters (e.g., gpt-5.2 doesn't support presence_penalty)
+        var requestBody = new Dictionary<string, object>
         {
-            messages = request.Messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
-            temperature = request.Temperature,
-            max_tokens = request.MaxTokens,
-            top_p = request.TopP,
-            presence_penalty = request.PresencePenalty,
-            frequency_penalty = request.FrequencyPenalty,
-            stream = false
+            ["messages"] = request.Messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
+            ["max_completion_tokens"] = request.MaxTokens ?? 4096,
+            ["stream"] = false
         };
+
+        // Only add optional parameters if they differ from defaults
+        // This ensures compatibility with models that don't support certain parameters
+        var temperature = request.Temperature ?? 1.0;
+        var topP = request.TopP ?? 1.0;
+        var presencePenalty = request.PresencePenalty ?? 0.0;
+        var frequencyPenalty = request.FrequencyPenalty ?? 0.0;
+        
+        if (Math.Abs(temperature - 1.0) > 0.001)
+            requestBody["temperature"] = temperature;
+            
+        if (Math.Abs(topP - 1.0) > 0.001)
+            requestBody["top_p"] = topP;
+            
+        if (Math.Abs(presencePenalty) > 0.001)
+            requestBody["presence_penalty"] = presencePenalty;
+            
+        if (Math.Abs(frequencyPenalty) > 0.001)
+            requestBody["frequency_penalty"] = frequencyPenalty;
 
         var jsonContent = JsonSerializer.Serialize(requestBody);
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
@@ -169,16 +186,33 @@ public class AzureAIFoundryService : IAzureAIFoundryService
         httpClient.DefaultRequestHeaders.Add("api-key", apiKey);
         httpClient.Timeout = TimeSpan.FromMinutes(5);
 
-        var requestBody = new
+        // Build request body dynamically, only including non-default parameters
+        // This ensures compatibility with models that don't support certain parameters (e.g., gpt-5.2 doesn't support presence_penalty)
+        var requestBody = new Dictionary<string, object>
         {
-            messages = request.Messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
-            temperature = request.Temperature,
-            max_tokens = request.MaxTokens,
-            top_p = request.TopP,
-            presence_penalty = request.PresencePenalty,
-            frequency_penalty = request.FrequencyPenalty,
-            stream = true
+            ["messages"] = request.Messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
+            ["max_completion_tokens"] = request.MaxTokens ?? 4096,
+            ["stream"] = true
         };
+
+        // Only add optional parameters if they differ from defaults
+        // This ensures compatibility with models that don't support certain parameters
+        var temperature = request.Temperature ?? 1.0;
+        var topP = request.TopP ?? 1.0;
+        var presencePenalty = request.PresencePenalty ?? 0.0;
+        var frequencyPenalty = request.FrequencyPenalty ?? 0.0;
+        
+        if (Math.Abs(temperature - 1.0) > 0.001)
+            requestBody["temperature"] = temperature;
+            
+        if (Math.Abs(topP - 1.0) > 0.001)
+            requestBody["top_p"] = topP;
+            
+        if (Math.Abs(presencePenalty) > 0.001)
+            requestBody["presence_penalty"] = presencePenalty;
+            
+        if (Math.Abs(frequencyPenalty) > 0.001)
+            requestBody["frequency_penalty"] = frequencyPenalty;
 
         var jsonContent = JsonSerializer.Serialize(requestBody);
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");

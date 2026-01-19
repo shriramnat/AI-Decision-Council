@@ -70,10 +70,15 @@
                                                    onchange="markRowChanged(this)" />
                                             <button type="button" class="btn-icon" onclick="toggleApiKeyVisibility(this)">👁</button>
                                         </td>
-                                        <td class="model-type" data-provider="@mdl.Provider.ToDisplayString()">
-                                            <span class="badge badge-@mdl.Provider.ToDisplayString().ToLower()">
-                                                @mdl.Provider.ToDisplayString()
-                                            </span>
+                                        <td class="model-type">
+                                            <select class="editable-input provider-select" 
+                                                    data-field="provider"
+                                                    data-current-provider="@mdl.Provider.ToDisplayString()"
+                                                    onchange="markRowChanged(this)">
+                                                <option value="OpenAI">OpenAI</option>
+                                                <option value="Azure">Azure</option>
+                                                <option value="xAI">xAI</option>
+                                            </select>
                                         </td>
                                         <td class="model-actions">
                                             <button type="button" class="btn-icon btn-save" onclick="saveRow(this)" disabled title="Save changes">
@@ -266,6 +271,35 @@
     </div>
 </div>
 
+<!-- Native Agent Configuration Flyout -->
+<div id="nativeAgentFlyout" class="flyout">
+    <div class="flyout-content">
+        <div class="flyout-header">
+            <h3>Configure Native Agent</h3>
+            <button type="button" class="flyout-close" onclick="closeNativeAgentFlyout()">&times;</button>
+        </div>
+        <div class="flyout-body">
+            <p class="flyout-description">
+                Select a model from your configured models to use as the Native Agent. 
+                The Native Agent powers AI-assisted features like automatic reviewer recommendations.
+            </p>
+            
+            <div class="form-group">
+                <label for="nativeAgentModelSelect">Select Model *</label>
+                <select id="nativeAgentModelSelect" class="form-control">
+                    <option value="">-- Select a model --</option>
+                </select>
+                <small class="form-text">Choose from your configured models above</small>
+            </div>
+            
+            <div id="nativeAgentFlyoutError" class="alert alert-error" style="display: none;"></div>
+        </div>
+        <div class="flyout-footer">
+            <button type="button" class="btn btn-primary" onclick="saveNativeAgentConfig()">Save</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
         function toggleVisibility(inputId) {
@@ -339,9 +373,9 @@
                 apiKeyToSend = undefined;
             }
             
-            // Get provider from the row's data attribute
-            const providerCell = row.querySelector('.model-type');
-            const provider = providerCell ? providerCell.dataset.provider : 'OpenAI';
+            // Get provider from the dropdown
+            const providerSelect = row.querySelector('.provider-select');
+            const provider = providerSelect ? providerSelect.value : 'OpenAI';
             
             const requestBody = {
                 modelName: modelName,
@@ -691,6 +725,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModelFlyout();
+                closeNativeAgentFlyout();
             }
         });
 
@@ -700,6 +735,91 @@
                 closeModelFlyout();
             }
         });
+
+        // Close Native Agent flyout on background click
+        document.getElementById('nativeAgentFlyout').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNativeAgentFlyout();
+            }
+        });
+
+        // Native Agent Flyout Functions
+        async function openNativeAgentFlyout(preselectedModelId = null) {
+            const select = document.getElementById('nativeAgentModelSelect');
+            const errorDiv = document.getElementById('nativeAgentFlyoutError');
+            errorDiv.style.display = 'none';
+            
+            // Clear and populate dropdown with configured models
+            select.innerHTML = '<option value="">-- Select a model --</option>';
+            
+            try {
+                const response = await fetch('/api/models');
+                if (!response.ok) throw new Error('Failed to load models');
+                
+                const models = await response.json();
+                
+                if (models.length === 0) {
+                    errorDiv.textContent = 'No models configured. Please add a model first.';
+                    errorDiv.style.display = 'block';
+                } else {
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = `${model.modelName} (${model.provider})`;
+                        select.appendChild(option);
+                    });
+                    
+                    // Pre-select model if provided
+                    if (preselectedModelId) {
+                        select.value = preselectedModelId;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading models for Native Agent:', error);
+                errorDiv.textContent = 'Failed to load models. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+            
+            document.getElementById('nativeAgentFlyout').classList.add('active');
+        }
+
+        function closeNativeAgentFlyout() {
+            document.getElementById('nativeAgentFlyout').classList.remove('active');
+        }
+
+        async function saveNativeAgentConfig() {
+            const select = document.getElementById('nativeAgentModelSelect');
+            const errorDiv = document.getElementById('nativeAgentFlyoutError');
+            const modelId = select.value;
+            
+            if (!modelId) {
+                errorDiv.textContent = 'Please select a model.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/native-agent/override', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ modelId: parseInt(modelId) })
+                });
+                
+                if (response.ok) {
+                    closeNativeAgentFlyout();
+                    showToast('Native Agent configuration saved', 'success');
+                    loadNativeAgentStatus(); // Refresh the status display
+                } else {
+                    const error = await response.json();
+                    errorDiv.textContent = error.error || 'Failed to save Native Agent configuration.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error saving Native Agent config:', error);
+                errorDiv.textContent = 'An error occurred: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
 
         // Load Native Agent configuration status on page load
         async function loadNativeAgentStatus() {
@@ -767,18 +887,32 @@
         }
 
         function configureNativeAgentOverride() {
-            // Open the model configuration flyout for Native Agent
-            window.isNativeAgentConfig = true;
-            openModelFlyout();
-            document.getElementById('flyoutTitle').textContent = 'Configure Native Agent';
+            // Open the dedicated Native Agent flyout
+            openNativeAgentFlyout();
         }
 
-        function editNativeAgentOverride() {
-            // Load existing Native Agent configuration and open flyout
-            window.isNativeAgentConfig = true;
-            window.nativeAgentModelId = undefined; // Will be loaded after fetching override
-            openModelFlyout();
-            document.getElementById('flyoutTitle').textContent = 'Edit Native Agent Configuration';
+        async function editNativeAgentOverride() {
+            // Get current Native Agent status to find the selected model ID
+            try {
+                const status = await settingsConnection.invoke('GetNativeAgentStatus');
+                // The status contains the model name but we need the model ID
+                // We'll need to fetch the models and find the matching one
+                const modelsResponse = await fetch('/api/models');
+                if (modelsResponse.ok) {
+                    const models = await modelsResponse.json();
+                    const matchingModel = models.find(m => m.modelName === status.modelName);
+                    if (matchingModel) {
+                        openNativeAgentFlyout(matchingModel.id);
+                    } else {
+                        openNativeAgentFlyout();
+                    }
+                } else {
+                    openNativeAgentFlyout();
+                }
+            } catch (error) {
+                console.error('Error getting current Native Agent config:', error);
+                openNativeAgentFlyout();
+            }
         }
 
         function removeNativeAgentOverride() {
@@ -855,6 +989,14 @@
             } else {
                 console.warn('Could not connect to SignalR hub for Native Agent status');
             }
+            
+            // Initialize provider dropdowns with their current values
+            document.querySelectorAll('.provider-select').forEach(select => {
+                const currentProvider = select.dataset.currentProvider;
+                if (currentProvider) {
+                    select.value = currentProvider;
+                }
+            });
         });
 
         function escapeHtml(text) {

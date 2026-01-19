@@ -36,6 +36,7 @@ public interface IReviewerRecommendationService
 {
     Task<List<ReviewerTemplateDto>> GetRecommendedReviewersAsync(string topic, string userId, CancellationToken cancellationToken = default);
     Task<(bool Configured, bool UsingDefault, string? ModelName)> GetNativeAgentStatusAsync(string userId);
+    Task<(bool Success, string? ModelName, string? Error)> TestNativeAgentConnectionAsync(string userId, CancellationToken cancellationToken = default);
 }
 
 public class ReviewerRecommendationService : IReviewerRecommendationService
@@ -190,6 +191,108 @@ public class ReviewerRecommendationService : IReviewerRecommendationService
         {
             _logger.LogError(ex, "Error retrieving Native Agent status for user {UserId}", userId);
             return (false, false, null);
+        }
+    }
+
+    /// <summary>
+    /// Tests the Native Agent connection by sending a simple test prompt and verifying a response
+    /// </summary>
+    public async Task<(bool Success, string? ModelName, string? Error)> TestNativeAgentConnectionAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Testing Native Agent connection for user {UserId}", userId);
+
+            // Get model configuration
+            var model = await GetNativeAgentModelAsync(userId);
+            if (model == null)
+            {
+                return (false, null, "Native Agent is not configured. Please select a model.");
+            }
+
+            var modelName = model.DisplayName ?? model.ModelName;
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(model.Endpoint))
+            {
+                return (false, modelName, "Model endpoint is not configured.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.ApiKey))
+            {
+                return (false, modelName, "API key is not configured for this model.");
+            }
+
+            // Send a simple test prompt to verify connectivity
+            var testRequest = new ChatCompletionRequest
+            {
+                Model = model.ModelName,
+                Messages = new List<ChatMessageDto>
+                {
+                    ChatMessageDto.User("Reply with only the word 'OK' to confirm connectivity.")
+                },
+                Temperature = 0.1,
+                MaxTokens = 10,
+                UserEmail = userId
+            };
+
+            var responseBuilder = new System.Text.StringBuilder();
+            var receivedResponse = false;
+
+            // Use a timeout for the test
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+            try
+            {
+                await foreach (var chunk in _openAIService.StreamChatCompletionAsync(testRequest, linkedCts.Token))
+                {
+                    var content = chunk.Choices.FirstOrDefault()?.Delta?.Content;
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        responseBuilder.Append(content);
+                        receivedResponse = true;
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+            {
+                return (false, modelName, "Connection timed out after 30 seconds. Please check endpoint and network.");
+            }
+
+            if (!receivedResponse || responseBuilder.Length == 0)
+            {
+                return (false, modelName, "No response received from the model.");
+            }
+
+            var response = responseBuilder.ToString().Trim();
+            _logger.LogInformation("Native Agent test successful for user {UserId}. Model: {ModelName}, Response: {Response}", 
+                userId, modelName, response);
+
+            return (true, modelName, null);
+        }
+        catch (DXO.Services.AzureAIFoundry.AzureAIFoundryException ex)
+        {
+            _logger.LogError(ex, "Azure AI Foundry error during Native Agent test for user {UserId}", userId);
+            
+            // Extract meaningful error from response content
+            var errorMessage = ex.ResponseContent ?? ex.Message;
+            if (errorMessage.Contains("invalid_api_key") || errorMessage.Contains("401"))
+            {
+                return (false, null, "Invalid API key. Please check your API key configuration.");
+            }
+            if (errorMessage.Contains("unsupported_parameter"))
+            {
+                return (false, null, $"Model parameter error: {errorMessage}");
+            }
+            return (false, null, $"API error: {errorMessage}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing Native Agent connection for user {UserId}", userId);
+            return (false, null, $"Connection failed: {ex.Message}");
         }
     }
 

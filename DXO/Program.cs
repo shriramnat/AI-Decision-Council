@@ -923,20 +923,15 @@ app.MapPost("/api/native-agent/test", async (HttpContext httpContext, IReviewerR
     
     try
     {
-        // Try to get Native Agent status - if it returns configured=true, connection is valid
-        var (configured, usingDefault, modelName) = await recommendationService.GetNativeAgentStatusAsync(userEmail);
+        // Actually test the connection by sending a real API request
+        var (success, modelName, error) = await recommendationService.TestNativeAgentConnectionAsync(userEmail, ct);
         
-        if (!configured)
-        {
-            return Results.Ok(new { success = false, error = "Native Agent is not configured" });
-        }
-        
-        return Results.Ok(new { success = true, modelName });
+        return Results.Ok(new { success, modelName, error });
     }
     catch (Exception ex)
     {
         logger.LogError(ex, "Error testing Native Agent connection for user {UserEmail}", userEmail);
-        return Results.Ok(new { success = false, error = ex.Message });
+        return Results.Ok(new { success = false, modelName = (string?)null, error = ex.Message });
     }
 }).RequireRateLimiting("ApiPolicy");
 
