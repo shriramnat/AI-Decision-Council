@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Microsoft.Identity.Web;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Polly;
 using Polly.Extensions.Http;
 using DXO.Configuration;
@@ -140,30 +141,103 @@ if (authConfig.Enabled)
         };
     };
 
-    // Add Entra ID (Azure AD) authentication
+    // Add cookie authentication first (required for all auth flows)
+    authBuilder.AddCookie(configureCookie);
+    
+    // Add Entra ID (Azure AD) authentication using OpenID Connect
     if (authConfig.EntraId.Enabled)
     {
-        // This also adds Cookie authentication automatically using the provided options
-        authBuilder.AddMicrosoftIdentityWebApp(options =>
+        var useClientSecret = !string.IsNullOrWhiteSpace(authConfig.EntraId.ClientSecret);
+        var usePkce = authConfig.EntraId.UsePkce;
+        
+        logger.LogInformation(
+            "Configuring Entra ID authentication: UsePKCE={UsePkce}, HasClientSecret={HasSecret}",
+            usePkce, useClientSecret);
+        
+        authBuilder.AddOpenIdConnect("EntraId", options =>
         {
-            options.Instance = authConfig.EntraId.Instance;
-            options.TenantId = authConfig.EntraId.TenantId;
+            // Set the authority (Microsoft identity platform v2.0 endpoint)
+            options.Authority = $"{authConfig.EntraId.Instance.TrimEnd('/')}/{authConfig.EntraId.TenantId}/v2.0";
             options.ClientId = authConfig.EntraId.ClientId;
-            options.ClientSecret = authConfig.EntraId.ClientSecret;
+            
+            // Only set client secret if provided (for confidential client flow)
+            // IMPORTANT: When using PKCE without a secret, do NOT set ClientSecret at all
+            if (useClientSecret)
+            {
+                options.ClientSecret = authConfig.EntraId.ClientSecret;
+                // Authorization code flow with client secret
+                options.ResponseType = OpenIdConnectResponseType.Code;
+                options.UsePkce = true; // PKCE is always beneficial even with secret
+            }
+            else
+            {
+                // PKCE-only flow (public client) - use implicit flow with id_token
+                // The authorization code flow requires a client secret for token exchange
+                // For public clients, we use the implicit flow which returns the id_token directly
+                options.ResponseType = OpenIdConnectResponseType.IdToken;
+                options.UsePkce = false; // PKCE is not used with implicit flow
+            }
+            
             options.CallbackPath = authConfig.EntraId.CallbackPath;
             options.SignedOutCallbackPath = "/signout-callback-oidc";
-            options.SaveTokens = false;
             
-            // Use authorization code flow (not hybrid flow)
-            // This avoids the need for id_token response type to be enabled
-            options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.Code;
-        }, configureCookie, "EntraId");
-    }
-    else
-    {
-        // If Entra ID is disabled, we must manually configure the cookie authentication
-        // because AddMicrosoftIdentityWebApp won't be called to do it for us.
-        authBuilder.AddCookie(configureCookie);
+            // Response mode - form_post is more secure for web apps
+            options.ResponseMode = OpenIdConnectResponseMode.FormPost;
+            
+            // We only need the ID token for user identity
+            options.SaveTokens = false;
+            options.GetClaimsFromUserInfoEndpoint = false; // Not needed for implicit flow
+            
+            // Configure scopes
+            options.Scope.Clear();
+            foreach (var scope in authConfig.EntraId.Scopes)
+            {
+                options.Scope.Add(scope);
+            }
+            
+            // For implicit flow, we need nonce validation
+            options.ProtocolValidator.RequireNonce = true;
+            
+            // Map claims from ID token
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+                NameClaimType = "name",
+                RoleClaimType = "roles",
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidAudience = authConfig.EntraId.ClientId
+            };
+            
+            // Handle events for better error handling and logging
+            options.Events = new OpenIdConnectEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    var authLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    authLogger.LogError(context.Exception, "Entra ID authentication failed");
+                    context.Response.Redirect("/Landing?authError=failed");
+                    context.HandleResponse();
+                    return Task.CompletedTask;
+                },
+                OnRemoteFailure = context =>
+                {
+                    var authLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    authLogger.LogError(context.Failure, "Entra ID remote failure");
+                    context.Response.Redirect("/Landing?authError=remote");
+                    context.HandleResponse();
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    var authLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    var email = context.Principal?.FindFirst("preferred_username")?.Value 
+                        ?? context.Principal?.FindFirst("email")?.Value
+                        ?? context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                    authLogger.LogInformation("Entra ID token validated for user: {Email}", email ?? "unknown");
+                    return Task.CompletedTask;
+                }
+            };
+        });
     }
 
     // Add Microsoft Account authentication
